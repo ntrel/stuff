@@ -8,6 +8,7 @@ import std.stdio;
 
 final class Table
 {
+    // TODO: null object pattern?
     Node[256] nodes;
 }
 
@@ -40,8 +41,12 @@ final class Node
         }
         if (sub.parent !is this)
         {
-            //TODO collision
-            return;
+            // collision
+            auto t = new Table;
+            // TODO opt
+            t.nodes = table.nodes;
+            sub = table.nodes[data[0]];
+            // overwrite slot
         }
         sub.insert(data[1..$]);
     }
@@ -49,6 +54,6 @@ final class Node
 
 void main(string[] args)
 {
-    
+    auto n = new Node;
 }
 
