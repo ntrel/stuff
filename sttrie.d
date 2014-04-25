@@ -8,8 +8,12 @@ import std.stdio;
 
 final class Table
 {
-    // TODO: null object pattern?
-    Node[256] nodes;
+    Node[256] nodes = void;
+    
+    this()
+    {
+        nodes[] = Node.none;
+    }
 }
 
 final class Node
@@ -26,17 +30,25 @@ final class Node
         table = t;
     }
     
+    // null object pattern
+    static Node none;
+    
+    static this()
+    {
+        none = new Node(null);
+    }
+    
     bool has(const(ubyte)[] data)
     {
         Node sub = table.nodes[data[0]];
-        return sub && sub.parent is this &&
+        return sub.parent is this &&
             (data.length == 1 || sub.has(data[1..$]));
     }
     
     void insert(const(ubyte)[] data)
     {
         Node sub = table.nodes[data[0]];
-        if (!sub)
+        if (sub is none)
         {
             sub = new Node(table);
             sub.parent = this;
@@ -65,6 +77,7 @@ unittest
     auto n = new Node(new Table);
     n.insert("hi".rep);
     assert(n.has("hi".rep));
+    //~ assert(!n.has("h".rep));
     n.insert("ho".rep);
     assert(n.has("ho".rep));
     assert(n.has("hi".rep));
