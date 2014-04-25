@@ -23,6 +23,9 @@ final class Node
     //~ ubyte offset;
     //~ ubyte[] indexes;
     //~ ubyte parentIndex;
+    // termination point
+    bool term;
+    
     static collisions = 0;
     
     this(Table t)
@@ -41,8 +44,12 @@ final class Node
     bool has(const(ubyte)[] data)
     {
         Node sub = table.nodes[data[0]];
-        return sub.parent is this &&
-            (data.length == 1 || sub.has(data[1..$]));
+        if (sub.parent !is this)
+            return false;
+        if (data.length == 1)
+            return sub.term;
+            
+        return sub.has(data[1..$]);
     }
     
     void insert(const(ubyte)[] data)
@@ -52,7 +59,11 @@ final class Node
         {
             sub = new Node(table);
             sub.parent = this;
-            data.length == 1 || sub.insert(data[1..$]);
+            if (data.length == 1)
+                sub.term = true;
+            else
+                sub.insert(data[1..$]);
+                
             table.nodes[data[0]] = sub;
             return;
         }
@@ -77,7 +88,7 @@ unittest
     auto n = new Node(new Table);
     n.insert("hi".rep);
     assert(n.has("hi".rep));
-    //~ assert(!n.has("h".rep));
+    assert(!n.has("h".rep));
     n.insert("ho".rep);
     assert(n.has("ho".rep));
     assert(n.has("hi".rep));
