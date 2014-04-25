@@ -26,7 +26,7 @@ final class Node
     // termination point
     bool term;
     
-    static collisions = 0;
+    debug static collisions = 0;
     
     this(Table t)
     {
@@ -54,9 +54,12 @@ final class Node
     
     void insert(const(ubyte)[] data)
     {
+        import std.algorithm : swap;
         Node sub = table.nodes[data[0]];
+        
         if (sub is none)
         {
+        newNode:
             sub = new Node(table);
             sub.parent = this;
             if (data.length == 1)
@@ -73,10 +76,17 @@ final class Node
             debug collisions++;
             auto t = new Table;
             // TODO opt
-            t.nodes = table.nodes;
-            sub = table.nodes[data[0]];
-            // overwrite slot
+            foreach (i, ref n; table.nodes)
+            {
+                if (n.parent is this)
+                    swap(n, t.nodes[i]);
+            }
+            
+            table = t;
+            assert(table.nodes[data[0]] is none);
+            goto newNode;
         }
+        // node already exists
         sub.insert(data[1..$]);
     }
 }
@@ -91,6 +101,9 @@ unittest
     assert(!n.has("h".rep));
     n.insert("ho".rep);
     assert(n.has("ho".rep));
+    assert(n.has("hi".rep));
+    n.insert("ah".rep);
+    assert(n.has("ah".rep));
     assert(n.has("hi".rep));
 }
 
