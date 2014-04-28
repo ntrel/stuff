@@ -7,22 +7,28 @@
 
 import std.stdio;
 
-struct Flag(string name)
-{
-    private bool val = true;
-    
-    bool opCast()
+template Flag(string name) {
+    enum Flag : bool
     {
-        return val;
+        no = false,
+        yes = true
     }
+}
+
+struct FlagValue(string name)
+{
+    alias Flag!name.yes this;
+    //~ Flag!name opCast()
+    //~ {
+        //~ return Flag!name.yes;
+    //~ }
+    //~ enum bool opCast = Flag!name.yes;
     
     /* opCast!bool can only return a bool, not a Flag, so instead
      * we use the bitwise complement operator. */
-    auto opUnary(string op: "~")()
+    template opUnary(string op: "~")
     {
-        auto f = Flag!name();
-        f.val = false;
-        return f;
+        enum opUnary = Flag!name.no;
     }
 }
 
@@ -30,7 +36,7 @@ struct FlagName
 {
     template opDispatch(string name)
     {
-        enum opDispatch = Flag!name();
+        enum opDispatch = FlagValue!name();
     }
 }
 
@@ -47,7 +53,7 @@ void main(string[] args)
     test(flag.fill);
     //~ test(true); // error
     //~ test(!flag.fill); // not allowed
-    test(~flag.fill);
+    //~ test(~flag.fill);
         
     //~ void ct(Flag!"expand" e = flag.expand)()
     //~ {
