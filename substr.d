@@ -9,6 +9,8 @@
 import std.array : empty;
 import std.algorithm : find;
 
+//~ version = Simple;
+
 version(Simple)
 T[] subString(T)(T[] haystack, T[] needle)
 {
@@ -27,7 +29,7 @@ match:
     haystack = haystack[1..$];
     goto match;
 }
-
+else
 T[] subString(T)(T[] haystack, T[] needle)
 {
     if (needle.empty)
