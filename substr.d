@@ -4,31 +4,38 @@
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
 
-import std.range;
-import std.algorithm;
+// TODO test with UTF
 
-// TODO check no bugs because of UTF front != h[0]
+import std.array : empty;
+import std.algorithm : find;
 
 version(Simple)
 T[] subString(T)(T[] haystack, T[] needle)
 {
-    assert(!needle.empty);
-    haystack = find(haystack, needle[0]);
+    if (needle.empty)
+        return haystack;
+    const first = needle[0];
+
+match:
+    haystack = find(haystack, first);
     if (haystack.length < needle.length)
         return [];
-        
-    if (haystack[0..needle.length] == needle)
+    // test remainder
+    if (haystack[1..needle.length] == needle[1..$])
         return haystack;
-    else
-        return subString(haystack[1..$], needle);
+    // try again
+    haystack = haystack[1..$];
+    goto match;
 }
 
 T[] subString(T)(T[] haystack, T[] needle)
 {
-    assert(!needle.empty);
+    if (needle.empty)
+        return haystack;
     const first = needle[0];
-    haystack = find(haystack, first);
 
+find_first:
+    haystack = find(haystack, first);
 match_tail:
     if (haystack.length < needle.length)
         return [];
@@ -52,11 +59,12 @@ match_tail:
             }
             // no next first char found past 0, can skip tested chars.
             // we also know haystack[i] != first
-            return subString(haystack[i+1..$], needle);
+            haystack = haystack[i+1..$];
+            goto find_first;
         }
     }
     // match found
-    return haystack[0..$];
+    return haystack;
 }
 
 unittest
@@ -68,7 +76,6 @@ unittest
     assert(subString("go", "got").empty);
     
     assert(find("asd", "") == "asd");
-    // FIXME
-    //~ assert(subString("asd", "") == "asd");
+    assert(subString("asd", "") == "asd");
 }
 
