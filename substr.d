@@ -42,25 +42,25 @@ match_tail:
     if (haystack.length < needle.length)
         return [];
         
-    // next first char
-    size_t nf = 0;
-    // skip haystack[0] == first
+    // index of next potential match start in haystack
+    size_t nextFirst = 0;
+    // skip first char
     foreach (i; 1..needle.length)
     {
         const e = haystack[i];
-        // remember next first char past 0
-        if (!nf && e == first)
-            nf = i;
+        // remember next match start
+        if (!nextFirst && e == first)
+            nextFirst = i;
         if (e != needle[i])
         {
             // match failed
-            if (nf)
+            if (nextFirst)
             {
-                haystack = haystack[nf..$];
+                haystack = haystack[nextFirst..$];
                 goto match_tail;
             }
-            // no next first char found past 0, can skip tested chars.
-            // we also know haystack[i] != first
+            // No next match found, we can skip all tested chars.
+            // We also know haystack[i] != first.
             haystack = haystack[i+1..$];
             goto find_first;
         }
