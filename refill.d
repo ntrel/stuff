@@ -5,10 +5,11 @@
 */
 
 import std.range;
+import std.traits;
 
-/** Copy up to r.length elements of src to r. */
+/** Overwrites r with elements of src until r is full. */
 auto refill(R, Input)(R r, Input src)
-if (isRandomAccessRange!R && isInputRange!Input)
+if (hasSlicing!R && isInputRange!Input)
 {
     foreach (i, ref e; r)
     {
