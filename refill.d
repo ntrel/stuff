@@ -27,7 +27,7 @@ if (hasSlicing!R && isInputRange!Input)
 ///
 unittest
 {
-    import std.algorithm : sort, uniq;
+    import std.algorithm : filter, sort, uniq;
 
     auto a = [5,5,5,5,4,3,3,3,1];
     auto b = a.refill(a.uniq);
@@ -38,5 +38,8 @@ unittest
     auto c = [1,4,1,3];
     assert(c.sort().release.refill(c.uniq) == [1,3,4]);
     assert(c == [1,3,4,4]);
+    
+    assert(c.refill(c.filter!(e => e != 3)) == [1,4,4]);
+    assert(c == [1,4,4,4]);
 }
 
