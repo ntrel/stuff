@@ -24,16 +24,19 @@ if (hasSlicing!R && isInputRange!Input)
     return r;
 }
 
-import std.algorithm : uniq;
-/// eager wrapper for uniq
-auto dedup(R)(R r){return r.refill(r.uniq);}
-
+///
 unittest
 {
+    import std.algorithm : sort, uniq;
+
     auto a = [5,5,5,5,4,3,3,3,1];
-    auto b = a.dedup;
+    auto b = a.refill(a.uniq);
     assert (a.ptr is b.ptr);
-    assert(a != b);
-    assert(b == [5, 4, 3, 1]);
+    assert(b == [5,4,3,1]);
+    assert(a == [5,4,3,1,4,3,3,3,1]);
+    
+    auto c = [1,4,1,3];
+    assert(c.sort().release.refill(c.uniq) == [1,3,4]);
+    assert(c == [1,3,4,4]);
 }
 
