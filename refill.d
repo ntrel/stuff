@@ -5,23 +5,15 @@
 */
 
 import std.range;
-import std.traits;
 
-/** Overwrites r with elements of src until r is full. */
+/** Returns a slice of r with its elements copied from src.
+ * Leftover elements of src are ignored. */
 auto refill(R, Input)(R r, Input src)
 if (hasSlicing!R && isInputRange!R && isInputRange!Input)
 {
-    foreach (i, ref e; r)
-    {
-        if (src.empty)
-        {
-            return r[0..i];
-        }
-        e = src.front;
-        src.popFront;
-    }
-    // ignore leftover elements in src
-    return r;
+    import std.algorithm : copy;
+    auto rem = copy(src.take(r.length), r);
+    return r[0 .. $ - rem.length];
 }
 
 /** Overwrites r with elements of fun(r) until r is full. */
