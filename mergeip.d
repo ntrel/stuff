@@ -23,21 +23,23 @@ void merge(T)(T[] left, T[] right)
         return;
     
     // swap runs of elements
-    size_t swapped;
-    foreach (i; 0..left.length)
+    const len = min(left.length, right.length);
+    size_t i;
+    do
     {
-        if (i == right.length || left[i] <= right[i])
-            break;
         swap(left[i], right[i]);
-        swapped++;
-    }
-    debug writeln('>', left, right);
+        i++;
+    } while (i != len && left[i] > right[i]);
+    
+    // number of elements swapped
+    const n = i;
+    debug writefln(">%s%s; %s", left, right, n);
     
     // may need to re-merge right if we ran out of left elements to swap
-    if (swapped == left.length)
-        merge(right[0..swapped], right[swapped..$]);
+    if (n == left.length)
+        merge(right[0..n], right[n..$]);
     else
-        merge(left[swapped..$], right);
+        merge(left[n..$], right);
 }
 
 unittest
@@ -50,6 +52,9 @@ unittest
     }
     test([2,3,4], [1,3,5]);
     test([1,3,5], [2,3,4]);
+    test([1,2], [4,5]);
+    test([4,5], [1,2]);
     test([4,5], [1,2,3]);
+    test([4,5,6], [1,2]);
 }
 
