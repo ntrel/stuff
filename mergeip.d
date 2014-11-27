@@ -40,10 +40,16 @@ void merge(T)(T[] left, T[] right)
         merge(left[swapped..$], right);
 }
 
-void main(string[] args)
+unittest
 {
-    merge([2,3,4], [1,3,5]);
-    merge([1,3,5], [2,3,4]);
-    merge([4,5], [1,2,3]);
+    void test(T)(T l, T r)
+    {
+        const s = sort(l ~ r).release;
+        merge(l, r);
+        assert(l ~ r == s);
+    }
+    test([2,3,4], [1,3,5]);
+    test([1,3,5], [2,3,4]);
+    test([4,5], [1,2,3]);
 }
 
