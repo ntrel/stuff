@@ -44,18 +44,21 @@ if (is(S == struct))
     }
     Rebindable!(const S) rs;
     static assert(!__traits(compiles, {S s = rs;}));
-    rs = S();
     {
+        S s;
+        rs = s;
         const S cs = rs;
         rs = cs;
     }
     Rebindable!(immutable S) ri;
     static assert(!__traits(compiles, {S s = ri;}));
-    ri = immutable S();
     {
+        S s;
+        static assert(!__traits(compiles, {ri = s;}));
         const S cs = ri;
         static assert(!__traits(compiles, {ri = cs;}));
-        immutable S i = ri;
+        immutable S si = ri;
+        ri = si;
     }
 }
 
