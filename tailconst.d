@@ -4,6 +4,8 @@
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
 
+// this is a version of std.typecons.Rebindable
+
 @safe:
 
 /** Holds a reassignable reference to a constant object. */
@@ -75,6 +77,8 @@ unittest
     itc = new immutable C(3);
     const C cc3 = itc;
     //immutable C ic2 = itc; // not implemented
+    
+    static assert(is(typeof(tailConst(new const C(1))) == TailConst!C));
 }
 
 // TailConst mimics Object
