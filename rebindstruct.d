@@ -27,6 +27,13 @@ if (is(S == struct))
         // we preserve tail immutable guarantees so cast is OK
         payload = cast(Unqual!S)s;
     }
+    
+    ~this() @trusted
+    {
+        import std.algorithm : move;
+        // call destructor with proper constness
+        S s = cast(S)move(payload);
+    }
 }
 
 ///
