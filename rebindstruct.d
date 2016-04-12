@@ -18,7 +18,15 @@ if (is(S == struct))
         this = s;
     }
     
-    @property S get() @trusted
+    static if (!is(S == immutable))
+    ref S get() @property
+    {
+        // payload exposed as const ref when S is const
+        return payload;
+    }
+    
+    static if (is(S == immutable))
+    S get() @property @trusted
     {
         // we return a copy so cast to immutable is OK
         return cast(S)payload;
