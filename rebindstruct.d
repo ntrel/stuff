@@ -13,6 +13,11 @@ if (is(S == struct))
     // fields of payload must be treated as tail const
     private Unqual!S payload;
     
+    this(S s)
+    {
+        this = s;
+    }
+    
     @property S get() @trusted
     {
         // we return a copy so cast to immutable is OK
@@ -49,7 +54,7 @@ if (is(S == struct))
         const cs = s;
         static assert(!__traits(compiles, {s = cs;}));
     }
-    Rebindable!(const S) rs;
+    Rebindable!(const S) rs = S();
     static assert(!__traits(compiles, {S s = rs;}));
     {
         S s;
@@ -57,7 +62,7 @@ if (is(S == struct))
         const S cs = rs;
         rs = cs;
     }
-    Rebindable!(immutable S) ri;
+    Rebindable!(immutable S) ri = S();
     static assert(!__traits(compiles, {S s = ri;}));
     {
         S s;
