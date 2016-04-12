@@ -51,33 +51,28 @@ if (is(S == struct))
     S s;
     
     // Can't assign S.ptr to (const S).ptr:
-    {
-        const cs = s;
-        static assert(!__traits(compiles, {s = cs;}));
-    }
+    const cs = s;
+    static assert(!__traits(compiles, {s = cs;}));
     
-    Rebindable!(const S) rs = S();
+    Rebindable!(const S) rs = s;
     static assert(!__traits(compiles, {s = rs;}));
     
+    const S cs2 = rs;
     // Rebind rs:
-    rs = s;
-    {
-        const S cs = rs;
-        rs = cs;
-    }
+    rs = cs2;
+    rs = S();
     
     Rebindable!(immutable S) ri = S();
     static assert(!__traits(compiles, {s = ri;}));
     static assert(!__traits(compiles, {ri = s;}));
     
-    {
-        const S cs = ri;
-        static assert(!__traits(compiles, {ri = cs;}));
-        
-        immutable S si = ri;
-        // Rebind ri:
-        ri = si;
-    }
+    const S cs3 = ri;
+    static assert(!__traits(compiles, {ri = cs3;}));
+    
+    immutable S si = ri;
+    // Rebind ri:
+    ri = si;
+    ri = S();
 }
 
 void main()
