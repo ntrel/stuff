@@ -56,21 +56,32 @@ if (is(S == struct))
     {
         int* ptr;
     }
-    S s;
     
-    // Can't assign S.ptr to (const S).ptr:
+    S s = S(new int);
+
     const cs = s;
+    // Can't assign s.ptr to cs.ptr
     static assert(!__traits(compiles, {s = cs;}));
     
     Rebindable!(const S) rs = s;
+    assert(rs.ptr is s.ptr);
+    // rs.ptr is const
+    static assert(!__traits(compiles, {rs.ptr = null;}));
+    
+    // Can't assign s.ptr to rs.ptr 
     static assert(!__traits(compiles, {s = rs;}));
     
     const S cs2 = rs;
-    // Rebind rs:
+    // Rebind rs
     rs = cs2;
     rs = S();
+    assert(rs.ptr is null);
     
-    Rebindable!(immutable S) ri = S();
+    Rebindable!(immutable S) ri = S(new int);
+    assert(ri.ptr !is null);
+    static assert(!__traits(compiles, {ri.ptr = null;}));
+    
+    // ri is not compatible with mutable S
     static assert(!__traits(compiles, {s = ri;}));
     static assert(!__traits(compiles, {ri = s;}));
     
@@ -78,9 +89,29 @@ if (is(S == struct))
     static assert(!__traits(compiles, {ri = cs3;}));
     
     immutable S si = ri;
-    // Rebind ri:
+    // Rebind ri
     ri = si;
     ri = S();
+    assert(ri.ptr is null);
+}
+
+// Test Rebindable!mutable
+@safe unittest
+{
+    static struct S
+    {
+        int* ptr;
+    }
+    
+    S s = S(new int);
+    Rebindable!S rs = s;
+    s = rs;
+    
+    assert(rs.ptr is s.ptr);
+    // mutate
+    rs.ptr = null;
+    assert(rs.ptr is null);
+    rs = S();
 }
 
 void main()
