@@ -5,6 +5,7 @@
 */
 
 
+/**  */
 struct Rebindable(S)
 if (is(S == struct))
 {
@@ -19,21 +20,20 @@ if (is(S == struct))
     }
     
     static if (!is(S == immutable))
-    ref S get() @property
+    ref S Rebindable_get() @property
     {
         // payload exposed as const ref when S is const
         return payload;
     }
     
     static if (is(S == immutable))
-    S get() @property @trusted
+    S Rebindable_get() @property @trusted
     {
         // we return a copy so cast to immutable is OK
         return cast(S)payload;
     }
 
-    // TODO: prefix payload, get against alias this conflicts
-    alias get this;
+    alias Rebindable_get this;
     
     void opAssign()(auto ref S s) @trusted
     {
