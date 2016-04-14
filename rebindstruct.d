@@ -5,7 +5,15 @@
 */
 
 
-/**  */
+/** Models safe reassignment of otherwise constant structs.
+ * 
+ * Structs with fields of reference type cannot be assigned to a constant 
+ * struct of the same type. `Rebindable!(const S)` allows assignment to
+ * `const S` while enforcing only constant access to fields of `S`.
+ * 
+ * `Rebindable!(immutable S)` does the same but field access may create a 
+ * temporary copy of `S` in order to enforce _true immutability.
+ */
 struct Rebindable(S)
 if (is(S == struct))
 {
