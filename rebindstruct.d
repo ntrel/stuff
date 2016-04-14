@@ -11,7 +11,7 @@ if (is(S == struct))
 {
     import std.traits : Unqual;
     
-    // fields of payload must be treated as tail const
+    // fields of payload must be treated as tail const (unless S is mutable)
     private Unqual!S payload;
     
     this(S s)
@@ -34,6 +34,17 @@ if (is(S == struct))
     }
 
     alias Rebindable_get this;
+    
+    version(MultipleAliasThis)
+    static if (is(S == immutable))
+    {
+        ref const(Unqual!S) Rebindable_getRef() @property
+        {
+            // payload exposed as const ref when S is immutable
+            return payload;
+        }
+        alias Rebindable_getRef this;
+    }
     
     void opAssign()(auto ref S s) @trusted
     {
