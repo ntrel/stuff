@@ -171,9 +171,10 @@ private:
     union
     {
         String str;
-        // FIXME can't be immutable
-        immutable(ubyte)[dataLen] data;
+        ubyte[dataLen] data;
     }
+    /* SSO length is outside the union so we can use the otherwise wasted
+     * size_t.sizeof-1 bytes of str.length for more data. */
     ubyte length;
     // needed for popFront
     ubyte offset;
@@ -186,16 +187,16 @@ private:
         return data[offset..length];
     }
 
-public:
-    /** Warning: Returned slice must not outlive `this`. */
-    @property immutable(ubyte)[] raw() @system
+    /* Warning: Returned slice must not outlive `this`. */
+    @property const(ubyte)[] raw() @system
     {
         if (small)
             return smallRaw;
         else
             return str.raw;
     }
-    
+
+public:
     String toString() @trusted
     {
         if (small)
