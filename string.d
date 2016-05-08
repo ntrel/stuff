@@ -7,6 +7,7 @@
 /* UTF-8 string containers */
 
 import std.range.primitives;
+import std.string : raw = representation;
 
 @safe:
 
@@ -24,6 +25,11 @@ public:
     @property immutable(ubyte)[] raw() return @system
     {
         return ptr[0..length];
+    }
+    
+    bool opEquals(String s) @trusted
+    {
+        return raw == s.raw;
     }
     
     // Input range primitives
@@ -49,9 +55,9 @@ String assumeUtf8(immutable(ubyte)[] data)
 
 unittest
 {
-    import std.string : raw = representation;
     String s = assumeUtf8("hi".raw);
     assert(!s.empty);
+    assert(s.length == 2);
     s.length = 0;
     assert(s.empty);
 }
@@ -81,14 +87,31 @@ private:
         size_t hash;
         immutable(ubyte)[0] data;
     }
+    static assert(Impl.sizeof == size_t.sizeof * 2);
     static emptyImpl = Impl.init;
     Impl* impl;
+    
+    auto raw() @system
+    {
+        return impl.data.ptr[0..impl.length];
+    }
     
 public:
     version(NullaryStructRuntimeCtors)
     this()
     {
         impl = &emptyImpl;
+    }
+    
+    this(String s) @trusted
+    {
+        // TODO allocate for ubyte*
+        auto bytes = new ubyte[Impl.sizeof + s.length];
+        bytes[Impl.sizeof..$] = s.ptr[0..s.length];
+        impl = cast(Impl*)bytes;
+        impl.length = s.length;
+        // FIXME
+        //impl.hash = bytes.hashof;
     }
     
     private String get()
@@ -105,6 +128,9 @@ unittest
     vs.impl = &vs.emptyImpl;
     String s = vs;
     assert(s.empty);
+    s = assumeUtf8("hi".raw);
+    vs = VoltString(s);
+    assert(vs == s);
 }
 
 struct SmallString
