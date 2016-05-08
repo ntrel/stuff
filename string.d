@@ -85,11 +85,11 @@ private:
     {
         size_t length;
         size_t hash;
-        immutable(ubyte)[0] data;
+        ubyte[0] data;
     }
     static assert(Impl.sizeof == size_t.sizeof * 2);
-    static emptyImpl = Impl.init;
-    Impl* impl;
+    static immutable emptyImpl = Impl.init;
+    immutable(Impl)* impl;
     
     auto raw() @system
     {
@@ -106,12 +106,14 @@ public:
     this(String s) @trusted
     {
         // TODO allocate for ubyte*
-        auto bytes = new ubyte[Impl.sizeof + s.length];
-        bytes[Impl.sizeof..$] = s.ptr[0..s.length];
-        impl = cast(Impl*)bytes;
-        impl.length = s.length;
-        // FIXME
-        //impl.hash = bytes.hashof;
+        const len = s.length;
+        auto mi = cast(Impl*)new ubyte[Impl.sizeof + len];
+        auto data = mi.data.ptr[0..len];
+        data[] = s.ptr[0..len];
+        mi.length = len;
+        //mi.hash = data.hashOf;
+        import util;
+        impl = mi.assumeUnique;
     }
     
     private String get()
