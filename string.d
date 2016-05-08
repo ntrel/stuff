@@ -6,6 +6,8 @@
 
 /* UTF-8 string containers */
 
+import std.range.primitives;
+
 @safe:
 
 struct String
@@ -34,7 +36,25 @@ public:
     // BiDi range
     @property dchar back();
     void popBack();
-    // no opIndex, length, opSlice because they can break UTF-8
+    static assert(isBidirectionalRange!String);
+    // no opIndex, (public) length, opSlice because they can break UTF-8
+    static assert(!hasLength!String);
+    static assert(!isRandomAccessRange!String);
+}
+
+String assumeUtf8(immutable(ubyte)[] data)
+{
+    String s = String(data.length, data.ptr);
+    return s;
+}
+
+unittest
+{
+    import std.string : raw = representation;
+    String s = assumeUtf8("hi".raw);
+    assert(!s.empty);
+    s.length = 0;
+    assert(s.empty);
 }
 
 struct HashString
@@ -46,6 +66,12 @@ immutable:
     alias str this;
 }
 
+unittest
+{
+    HashString hs;
+    String s = hs;
+}
+
 struct SmallString
 {
 private:
@@ -54,6 +80,7 @@ private:
     union
     {
         String str;
+        // FIXME can't be immutable
         immutable(ubyte)[dataLen] data;
     }
     ubyte length;
