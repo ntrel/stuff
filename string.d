@@ -44,8 +44,7 @@ public:
 
 String assumeUtf8(immutable(ubyte)[] data)
 {
-    String s = String(data.length, data.ptr);
-    return s;
+    return String(data.length, data.ptr);
 }
 
 unittest
@@ -70,6 +69,42 @@ unittest
 {
     HashString hs;
     String s = hs;
+}
+
+/* Impl based on an idea from volt-lang.org */
+struct VoltString
+{
+private:
+    struct Impl
+    {
+        size_t length;
+        size_t hash;
+        immutable(ubyte)[0] data;
+    }
+    static emptyImpl = Impl.init;
+    Impl* impl;
+    
+public:
+    version(NullaryStructRuntimeCtors)
+    this()
+    {
+        impl = &emptyImpl;
+    }
+    
+    private String get()
+    {
+        return String(impl.length, impl.data.ptr);
+    }
+    
+    alias get this;
+}
+
+unittest
+{
+    VoltString vs;
+    vs.impl = &vs.emptyImpl;
+    String s = vs;
+    assert(s.empty);
 }
 
 struct SmallString
@@ -109,7 +144,7 @@ public:
     {
         if (small)
         {
-            String s = String(length, smallRaw.idup.ptr);
+            auto s = String(length, smallRaw.idup.ptr);
             length = ubyte.max;
             import std.algorithm : move;
             str = s.move;
