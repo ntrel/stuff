@@ -118,15 +118,14 @@ private:
     }
     static assert(Impl.sizeof == size_t.sizeof * 2);
     static immutable emptyImpl = Impl.init;
-    immutable(Impl)* impl;
+    immutable(Impl)* impl = &emptyImpl;
     
-public:
-    version(NullaryStructRuntimeCtors)
-    this()
+    auto raw() @system
     {
-        impl = &emptyImpl;
+        return impl.data.ptr[0..impl.length];
     }
     
+public:    
     this(String s) @trusted
     {
         const data = s.raw;
@@ -154,7 +153,6 @@ public:
 unittest
 {
     VoltString vs;
-    vs.impl = &vs.emptyImpl;
     String s = vs;
     assert(s.empty);
     s = assumeUtf8("hi".raw);
