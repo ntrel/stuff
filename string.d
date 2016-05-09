@@ -19,7 +19,7 @@ private:
     ubyte frontLen;
     
 public:
-    @property raw()
+    @property immutable(ubyte)[] raw()
     {
         return data;
     }
@@ -120,12 +120,12 @@ private:
     static immutable emptyImpl = Impl.init;
     immutable(Impl)* impl = &emptyImpl;
     
-    auto raw() @system
+public:    
+    @property immutable(ubyte)[] raw()
     {
-        return impl.data.ptr[0..impl.length];
+        return impl.raw;
     }
     
-public:    
     this(String s) @trusted
     {
         const data = s.raw;
