@@ -25,6 +25,14 @@ immutable(T)* assumeUnique(T)(T* ptr)
     return cast(typeof(return))ptr;
 }
 
+unittest
+{
+    char[] arr = "hi".dup;
+    immutable(char)* s = arr.ptr.assumeUnique;
+    assert(s[0..2] == arr);
+}
+
+
 /** Checks if a particular version is defined globally.
  * Author: Tomek Sowiński
  */
