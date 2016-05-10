@@ -14,16 +14,12 @@ import std.string : raw = representation;
 struct String
 {
 private:
-    size_t length;
-    /* Note: ptr may point past the end of a memory block, so we must ensure
-     * it doesn't escape in @safe code (at least when length == 0). It can
-     * escape as void* though for comparisons. */
-    immutable(ubyte)* ptr;
+    immutable(ubyte)[] data;
     
 public:
-    @property immutable(ubyte)[] raw() @trusted
+    @property raw()
     {
-        return ptr[0..length];
+        return data;
     }
     
     bool opEquals(String s) @trusted
@@ -32,8 +28,8 @@ public:
     }
     
     // Input range primitives
-    @property bool empty() {return length == 0;}
-    // decodes ptr[0..4]
+    @property bool empty() {return data.length == 0;}
+    // decodes data[0..4]
     @property dchar front();
     void popFront();
     // Forward range
@@ -49,15 +45,15 @@ public:
 
 String assumeUtf8(immutable(ubyte)[] data)
 {
-    return String(data.length, data.ptr);
+    return String(data);
 }
 
 unittest
 {
     String s = assumeUtf8("hi".raw);
     assert(!s.empty);
-    assert(s.length == 2);
-    s.length = 0;
+    assert(s.raw.length == 2);
+    s = s.init;
     assert(s.empty);
 }
 
@@ -86,7 +82,7 @@ private:
         size_t hash;
         ubyte[0] data;
         
-        @property raw() @trusted
+        @property raw() @trusted inout
         {
             return data.ptr[0..length];
         }
@@ -120,7 +116,7 @@ public:
     
     private String get()
     {
-        return String(impl.length, impl.data.ptr);
+        return String(impl.raw);
     }
     
     alias get this;
@@ -175,7 +171,7 @@ public:
     {
         if (small)
         {
-            auto s = String(length, smallRaw.idup.ptr);
+            auto s = String(smallRaw.idup);
             length = ubyte.max;
             import std.algorithm : move;
             str = s.move;
