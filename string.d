@@ -21,8 +21,7 @@ private:
     immutable(ubyte)* ptr;
     
 public:
-    /* Returned `data` slice must not outlive `this`, hence new `return` feature */
-    @property immutable(ubyte)[] raw() return @system
+    @property immutable(ubyte)[] raw() @trusted
     {
         return ptr[0..length];
     }
@@ -86,15 +85,15 @@ private:
         size_t length;
         size_t hash;
         ubyte[0] data;
+        
+        @property raw() @trusted
+        {
+            return data.ptr[0..length];
+        }
     }
     static assert(Impl.sizeof == size_t.sizeof * 2);
     static immutable emptyImpl = Impl.init;
     immutable(Impl)* impl;
-    
-    auto raw() @system
-    {
-        return impl.data.ptr[0..impl.length];
-    }
     
 public:
     version(NullaryStructRuntimeCtors)
@@ -105,15 +104,20 @@ public:
     
     this(String s) @trusted
     {
-        // TODO allocate for ubyte*
         const len = s.length;
-        auto mi = cast(Impl*)new ubyte[Impl.sizeof + len];
-        auto data = mi.data.ptr[0..len];
-        data[] = s.ptr[0..len];
+        auto data = new ubyte[Impl.sizeof + len];
+        auto mi = cast(Impl*)data.ptr;
         mi.length = len;
-        //mi.hash = data.hashOf;
+        data = mi.raw;
+        data[] = s.raw;
+        mi.hash = data.hashOf;
         import util;
         impl = mi.assumeUnique;
+    }
+    
+    @property hash()
+    {
+        return impl.hash;
     }
     
     private String get()
@@ -133,6 +137,7 @@ unittest
     s = assumeUtf8("hi".raw);
     vs = VoltString(s);
     assert(vs == s);
+    assert(vs.hash == s.raw.hashOf);
 }
 
 struct SmallString
