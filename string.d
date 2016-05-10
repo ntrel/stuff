@@ -104,12 +104,10 @@ public:
     
     this(String s) @trusted
     {
-        const len = s.length;
-        auto data = new ubyte[Impl.sizeof + len];
-        auto mi = cast(Impl*)data.ptr;
-        mi.length = len;
-        data = mi.raw;
-        data[] = s.raw;
+        const data = s.raw;
+        auto mi = cast(Impl*)new ubyte[Impl.sizeof + data.length].ptr;
+        mi.length = data.length;
+        mi.raw[] = data;
         mi.hash = data.hashOf;
         import util;
         impl = mi.assumeUnique;
