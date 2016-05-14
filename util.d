@@ -4,13 +4,25 @@
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
 
-/// Useful one-liners.
+/** Useful one-liners.
+ * 
+ * Functions:
+ * $(LREF apply)
+ * $(LREF assumeUnique)
+ * 
+ * Templates:
+ * $(LREF Apply)
+ * $(LREF isVersion)
+ * 
+ * Macros:
+ * LREF=<a href="#$1">$1</a>
+ */
 module util;
 
-///
-auto assumeUnique(T)(T* ptr)
+/// See_Also: std.exception.assumeUnique.
+immutable(T)* assumeUnique(T)(T* ptr)
 {
-    return cast(immutable(T)*)ptr;
+    return cast(typeof(return))ptr;
 }
 
 /** Checks if a particular version is defined globally.
