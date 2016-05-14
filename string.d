@@ -22,7 +22,7 @@ public:
         return data;
     }
     
-    bool opEquals(String s) @trusted
+    bool opEquals(String s)
     {
         return raw == s.raw;
     }
