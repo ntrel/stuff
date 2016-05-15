@@ -19,13 +19,15 @@
  */
 module util;
 
+@safe:
+
 /// See_Also: std.exception.assumeUnique.
-immutable(T)* assumeUnique(T)(T* ptr)
+immutable(T)* assumeUnique(T)(T* ptr) @system
 {
     return cast(typeof(return))ptr;
 }
 
-unittest
+@system unittest
 {
     char[] arr = "hi".dup;
     immutable(char)* s = arr.ptr.assumeUnique;
