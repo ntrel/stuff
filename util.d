@@ -4,11 +4,12 @@
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
 
-/** Useful one-liners.
+/** Useful small utilities, mostly one-liners.
  * 
  * Functions:
  * $(LREF apply)
  * $(LREF assumeUnique)
+ * $(LREF delete_)
  * 
  * Templates:
  * $(LREF Apply)
@@ -103,4 +104,39 @@ unittest
 }
 
 
-// TODO: frameArray, Set
+/// Runs destructor and frees memory.
+auto delete_(Object obj) @system
+{
+	destroy(obj);
+	.delete_(cast(void*)obj);
+}
+
+/// ditto
+auto delete_(T)(T* ptr) @system
+{
+	static if (is(T == struct))
+		destroy(*ptr);
+	import core.memory;
+	GC.free(ptr);
+}
+
+///
+@system unittest
+{
+	int j;
+	class C
+	{
+		~this(){j = 3;}
+	}
+	delete_(new C);
+	assert(j == 3);
+	
+	struct S
+	{
+		~this(){j = 7;}
+	}
+	delete_(new S);
+	assert(j == 7);
+}
+
+// TODO: frameArray, Set, staticArray
