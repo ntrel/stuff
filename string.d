@@ -8,6 +8,7 @@
 
 import std.range.primitives;
 import std.string : raw = representation;
+import object : string; //workaround dmd 2.071
 
 @safe:
 
@@ -15,6 +16,7 @@ struct String
 {
 private:
     immutable(ubyte)[] data;
+    ubyte frontLen;
     
 public:
     @property raw()
@@ -29,15 +31,40 @@ public:
     
     // Input range primitives
     @property bool empty() {return data.length == 0;}
-    // decodes data[0..4]
-    @property dchar front();
-    void popFront();
+
+    @property dchar front()
+    {
+        import std.utf : decodeFront;
+        size_t i = 0;
+        auto s = cast(string)data;
+        auto dc = decodeFront(s, i);
+        frontLen = cast(ubyte)i;
+        return dc;
+    }
+    
+    void popFront() @trusted
+    {
+        assert(!empty, "Attempting to popFront() on an empty String");
+        // front not called
+        if (!frontLen)
+        {
+            // use std.range popFront optimization
+            auto s = cast(string)data;
+            s.popFront;
+            data = cast(typeof(data))s;
+            return;
+        }
+        data = data[frontLen .. $];
+        frontLen = 0;
+    }
+    
     // Forward range
     String save() {return this;}
     // BiDi range
     @property dchar back();
     void popBack();
     static assert(isBidirectionalRange!String);
+    
     // no opIndex, (public) length, opSlice because they can break UTF-8
     static assert(!hasLength!String);
     static assert(!isRandomAccessRange!String);
@@ -53,6 +80,8 @@ unittest
     String s = assumeUtf8("hi".raw);
     assert(!s.empty);
     assert(s.raw.length == 2);
+    import std.algorithm;
+    assert(s.equal("hi"));
     s = s.init;
     assert(s.empty);
 }
