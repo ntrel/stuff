@@ -114,6 +114,7 @@ auto delete_(Object obj) @system
 /// ditto
 auto delete_(T)(T* ptr) @system
 {
+	// TODO: T == static array
 	static if (is(T == struct))
 		destroy(*ptr);
 	import core.memory;
@@ -139,4 +140,4 @@ auto delete_(T)(T* ptr) @system
 	assert(j == 7);
 }
 
-// TODO: frameArray, Set, staticArray
+// TODO: fixedArray, frameArray, Set, staticEx
