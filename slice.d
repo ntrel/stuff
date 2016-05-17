@@ -16,6 +16,7 @@ module slice;
  */
 struct Chunk(T)
 {
+@system:
 private:
 	struct Impl
 	{
@@ -23,25 +24,35 @@ private:
 		T[] unused;
 		T[0] _data;
 		
-		@property data() @trusted
+		@property data()
 		{
 			return _data.ptr[0..size];
 		}
 	}
 	Impl* impl;
 	
-	this(size_t size) @system
+public:
+	this(size_t size)
 	{
 		// TODO: don't initialize data
 		// TODO: round up allocation
-		auto bytes = new ubyte[Impl.sizeof + size].ptr;
+		auto bytes = new void[Impl.sizeof + size].ptr;
 		*cast(size_t*)bytes = size;
 		impl = cast(Impl*)bytes;
-		with (impl) unused = _data;
+		with (impl) unused = data;
 	}
 	
-public:
-	~this()
+	auto take(size_t n)
+	{
+		import std.range;
+		with (impl)
+		{
+			unused.drop(n);
+			return data[0..n];
+		}
+	}
+	
+	~this() @safe
 	{
 		// clear base memory reference
 		impl = null;
@@ -67,23 +78,25 @@ public:
 		return data.length;
 	}
 	
+	Slice opSlice(size_t, size_t);
+	
 	// uses chunk.impl.unused
 	void opAppend(Slice s);
 
 	~this()
 	{
-		//data.ptr = null; // may be base
+		// clear possible base pointer
+		//data.ptr = null;
 		data = [];
 	}
 }
 
 ///
-Slice!T slice(T, n)(T[n] items...) @trusted
+Slice!T slice(T, size_t n)(T[n] items...) @trusted
 {
 	auto c = Chunk!T(n);
-	auto s = Slice!T(c, c.data[0..n]);
+	auto s = Slice!T(c, c.take(n));
 	s.data[] = items;
-	c.impl.unused = c.data[n..$];
 	return s;
 }
 

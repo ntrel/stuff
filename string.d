@@ -109,11 +109,11 @@ private:
     {
         size_t length;
         size_t hash;
-        ubyte[0] data;
+        ubyte[0] _data;
         
         @property raw() @trusted inout
         {
-            return data.ptr[0..length];
+            return _data.ptr[0..length];
         }
     }
     static assert(Impl.sizeof == size_t.sizeof * 2);
