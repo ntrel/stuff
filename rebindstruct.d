@@ -7,7 +7,7 @@
 
 /** Models safe reassignment of otherwise constant structs.
  * 
- * Structs with fields of reference type cannot be assigned to a constant 
+ * A struct with a field of reference type cannot be assigned to a constant 
  * struct of the same type. `Rebindable!(const S)` allows assignment to
  * `const S` while enforcing only constant access to fields of `S`.
  * 
@@ -22,9 +22,17 @@ if (is(S == struct))
     // fields of payload must be treated as tail const (unless S is mutable)
     private Unqual!S payload;
     
-    this(S s)
+    this()(auto ref S s) @trusted
     {
-        this = s;
+        //this = s; // Error: field payload must be initialized in constructor
+        // we preserve tail immutable guarantees so cast is OK
+        payload = cast(Unqual!S)s;
+    }
+    
+    void opAssign()(auto ref S s) @trusted
+    {
+        // we preserve tail immutable guarantees so cast is OK
+        payload = cast(Unqual!S)s;
     }
     
     static if (!is(S == immutable))
@@ -52,12 +60,6 @@ if (is(S == struct))
             return payload;
         }
         alias Rebindable_getRef this;
-    }
-    
-    void opAssign()(auto ref S s) @trusted
-    {
-        // we preserve tail immutable guarantees so cast is OK
-        payload = cast(Unqual!S)s;
     }
     
     ~this() @trusted
@@ -133,7 +135,20 @@ if (is(S == struct))
     rs = S();
 }
 
-void main()
+// Test disabled default ctor
+unittest
 {
+    static struct ND
+    {
+        int _i;
+        @disable this();
+        this(int i) inout {_i = i;}
+    }
+    static assert(!__traits(compiles, Rebindable!ND()));
     
+    Rebindable!(const ND) rb = ND(1);
+    rb = immutable ND(2);
+    static assert(!__traits(compiles, rb._i++));
 }
+
+
