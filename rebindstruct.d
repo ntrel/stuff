@@ -4,6 +4,7 @@
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
 
+import std.traits : isMutable;
 
 /** Models safe reassignment of otherwise constant structs.
  * 
@@ -15,7 +16,7 @@
  * temporary copy of `S` in order to enforce _true immutability.
  */
 struct Rebindable(S)
-if (is(S == struct))
+if (is(S == struct) && !isMutable!S)
 {
     import std.traits : Unqual;
     
@@ -68,6 +69,22 @@ if (is(S == struct))
         // call destructor with proper constness
         S s = cast(S)move(payload);
     }
+}
+
+template Rebindable(S)
+if (is(S == struct) && isMutable!S)
+{
+    alias Rebindable = S;
+}
+
+///
+Rebindable!S rebindable(S)(auto ref S s)
+if (is(S == struct))
+{
+    static if (isMutable!S)
+        return s;
+    else
+        return Rebindable!S(s);
 }
 
 ///
@@ -126,13 +143,8 @@ if (is(S == struct))
     
     S s = S(new int);
     Rebindable!S rs = s;
-    s = rs;
-    
-    assert(rs.ptr is s.ptr);
-    // mutate
-    rs.ptr = null;
-    assert(rs.ptr is null);
-    rs = S();
+    static assert(is(typeof(rs) == S));
+    rs = rebindable(S());
 }
 
 // Test disabled default ctor
@@ -140,15 +152,17 @@ unittest
 {
     static struct ND
     {
-        int _i;
+        int i;
         @disable this();
-        this(int i) inout {_i = i;}
+        this(int i) inout {this.i = i;}
     }
     static assert(!__traits(compiles, Rebindable!ND()));
     
     Rebindable!(const ND) rb = ND(1);
     rb = immutable ND(2);
-    static assert(!__traits(compiles, rb._i++));
+    rb = rebindable(ND(3));
+    assert(rb.i == 3);
+    static assert(!__traits(compiles, rb.i++));
 }
 
 
