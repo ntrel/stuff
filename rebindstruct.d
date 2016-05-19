@@ -23,17 +23,15 @@ if (is(S == struct) && !isMutable!S)
     // fields of payload must be treated as tail const (unless S is mutable)
     private Unqual!S payload;
     
-    this()(auto ref S s) @trusted
+    this()(S s) @trusted
     {
-        //this = s; // Error: field payload must be initialized in constructor
         // we preserve tail immutable guarantees so cast is OK
         payload = cast(Unqual!S)s;
     }
     
-    void opAssign()(auto ref S s) @trusted
+    void opAssign()(S s)
     {
-        // we preserve tail immutable guarantees so cast is OK
-        payload = cast(Unqual!S)s;
+        this = Rebindable(s);
     }
     
     static if (!is(S == immutable))
@@ -71,6 +69,7 @@ if (is(S == struct) && !isMutable!S)
     }
 }
 
+///
 template Rebindable(S)
 if (is(S == struct) && isMutable!S)
 {
@@ -78,7 +77,7 @@ if (is(S == struct) && isMutable!S)
 }
 
 ///
-Rebindable!S rebindable(S)(auto ref S s)
+Rebindable!S rebindable(S)(S s)
 if (is(S == struct))
 {
     static if (isMutable!S)
