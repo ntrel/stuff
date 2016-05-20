@@ -105,40 +105,47 @@ unittest
 }
 
 
-/// Runs destructor and frees memory.
-auto delete_(Object obj) @system
+/** Runs destructor and frees memory.
+ * Sets argument to null for safety.
+ */
+auto delete_(C:Object)(ref C obj) @system
 {
-	destroy(obj);
-	.delete_(cast(void*)obj);
+    destroy(obj);
+    import core.memory;
+    GC.free(cast(void*)obj);
+    obj = null;
 }
 
 /// ditto
-auto delete_(T)(T* ptr) @system
+auto delete_(T)(ref T* ptr) @system
 {
-	// TODO: T == static array
-	static if (is(T == struct))
-		destroy(*ptr);
-	import core.memory;
-	GC.free(ptr);
+    // FIXME: T == static array
+    static if (is(T == struct))
+        destroy(*ptr);
+    import core.memory;
+    GC.free(ptr);
+    ptr = null;
 }
 
 ///
 @system unittest
 {
-	int j;
-	class C
-	{
-		~this(){j = 3;}
-	}
-	delete_(new C);
-	assert(j == 3);
-	
-	struct S
-	{
-		~this(){j = 7;}
-	}
-	delete_(new S);
-	assert(j == 7);
+    int j;
+    class C
+    {
+        ~this(){j = 3;}
+    }
+    auto c = new C;
+    delete_(c);
+    assert(j == 3);
+    
+    struct S
+    {
+        ~this(){j = 7;}
+    }
+    auto s = new S;
+    delete_(s);
+    assert(j == 7);
 }
 
 
