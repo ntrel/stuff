@@ -35,7 +35,7 @@ if (is(S == struct) && !isMutable!S)
     }
     
     static if (!is(S == immutable))
-    ref S Rebindable_get() @property
+    ref S Rebindable_getRef() @property
     {
         // payload exposed as const ref when S is const
         return payload;
@@ -48,18 +48,10 @@ if (is(S == struct) && !isMutable!S)
         return cast(S)payload;
     }
 
-    alias Rebindable_get this;
-    
-    version(MultipleAliasThis)
     static if (is(S == immutable))
-    {
-        ref const(Unqual!S) Rebindable_getRef() @property
-        {
-            // payload exposed as const ref when S is immutable
-            return payload;
-        }
+        alias Rebindable_get this;
+    else
         alias Rebindable_getRef this;
-    }
     
     ~this() @trusted
     {
