@@ -119,8 +119,8 @@ auto delete_(C:Object)(ref C obj) @system
 /// ditto
 auto delete_(T)(ref T* ptr) @system
 {
-    // FIXME: T == static array
-    static if (is(T == struct))
+    import std.traits;
+    static if (hasElaborateDestructor!T)
         destroy(*ptr);
     import core.memory;
     GC.free(ptr);
@@ -138,14 +138,37 @@ auto delete_(T)(ref T* ptr) @system
     auto c = new C;
     delete_(c);
     assert(j == 3);
+    assert(c is null);
     
     struct S
     {
-        ~this(){j = 7;}
+        ~this(){j++;}
     }
     auto s = new S;
     delete_(s);
+    assert(j == 4);
+    assert(s is null);
+    
+    // attempt to test new SA
+    //auto arr = new S[3]; // S[], can't make S[3]*
+    auto sa = newStaticArray!(S[3]);
+    //~ delete_(sa); // access violation?!
+    //~ *sa = (S[3]).init; // access violation?!
+    //~ assert(j == 7);
+    
+    // debug
+    S[3] arr;
+    //~ arr.destroy; // access violation?!
+    arr = arr.init;
     assert(j == 7);
+}
+
+
+auto newStaticArray(SA:T[n], T, size_t n)() @trusted
+{
+	//auto data = new T[n]; // invalid memory operation on cast
+	auto data = new void[T.sizeof * n];
+	return cast(SA*)data.ptr;
 }
 
 
