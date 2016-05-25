@@ -6,11 +6,11 @@
 
 import std.traits : isMutable;
 
-/** Models safe reassignment of otherwise constant structs.
+/** Models safe reassignment of otherwise constant struct instances.
  * 
  * A struct with a field of reference type cannot be assigned to a constant 
  * struct of the same type. `Rebindable!(const S)` allows assignment to
- * `const S` while enforcing only constant access to fields of `S`.
+ * a `const S` while enforcing only constant access to its fields.
  * 
  * `Rebindable!(immutable S)` does the same but field access may create a 
  * temporary copy of `S` in order to enforce _true immutability.
@@ -85,7 +85,6 @@ if (is(S == struct))
     {
         int* ptr;
     }
-    
     S s = S(new int);
 
     const cs = s;
@@ -105,7 +104,17 @@ if (is(S == struct))
     rs = cs2;
     rs = S();
     assert(rs.ptr is null);
-    
+}
+
+// Test Rebindable!immutable
+@safe unittest
+{
+    static struct S
+    {
+        int* ptr;
+    }
+    S s = S(new int);
+
     Rebindable!(immutable S) ri = S(new int);
     assert(ri.ptr !is null);
     static assert(!__traits(compiles, {ri.ptr = null;}));
@@ -131,8 +140,8 @@ if (is(S == struct))
     {
         int* ptr;
     }
-    
-    S s = S(new int);
+    S s;
+
     Rebindable!S rs = s;
     static assert(is(typeof(rs) == S));
     rs = rebindable(S());
@@ -150,7 +159,9 @@ unittest
     static assert(!__traits(compiles, Rebindable!ND()));
     
     Rebindable!(const ND) rb = ND(1);
+    assert(rb.i == 1);
     rb = immutable ND(2);
+    assert(rb.i == 2);
     rb = rebindable(ND(3));
     assert(rb.i == 3);
     static assert(!__traits(compiles, rb.i++));
