@@ -4,8 +4,6 @@
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
 
-import std.traits : isMutable;
-
 /** Models safe reassignment of otherwise constant struct instances.
  * 
  * A struct with a field of reference type cannot be assigned to a constant 
@@ -15,63 +13,67 @@ import std.traits : isMutable;
  * `Rebindable!(immutable S)` does the same but field access may create a 
  * temporary copy of `S` in order to enforce _true immutability.
  */
-struct Rebindable(S)
-if (is(S == struct) && !isMutable!S)
-{
-    import std.traits : Unqual;
-    
-    // fields of payload must be treated as tail const (unless S is mutable)
-    private Unqual!S payload;
-    
-    this()(S s) @trusted
-    {
-        // we preserve tail immutable guarantees so cast is OK
-        payload = cast(Unqual!S)s;
-    }
-    
-    void opAssign()(S s)
-    {
-        this = Rebindable(s);
-    }
-    
-    static if (!is(S == immutable))
-    ref S Rebindable_getRef() @property
-    {
-        // payload exposed as const ref when S is const
-        return payload;
-    }
-    
-    static if (is(S == immutable))
-    S Rebindable_get() @property @trusted
-    {
-        // we return a copy so cast to immutable is OK
-        return cast(S)payload;
-    }
-
-    static if (is(S == immutable))
-        alias Rebindable_get this;
-    else
-        alias Rebindable_getRef this;
-    
-    ~this() @trusted
-    {
-        import std.algorithm : move;
-        // call destructor with proper constness
-        S s = cast(S)move(payload);
-    }
-}
-
-///
 template Rebindable(S)
-if (is(S == struct) && isMutable!S)
+if (is(S == struct))
 {
-    alias Rebindable = S;
+    import std.traits : isMutable;
+
+    static if (isMutable!S)
+        alias Rebindable = S;
+    else
+    struct Rebindable
+    {
+        import std.traits : Unqual;
+        
+        // fields of payload must be treated as tail const (unless S is mutable)
+        private Unqual!S payload;
+        
+        this()(S s) @trusted
+        {
+            // we preserve tail immutable guarantees so cast is OK
+            payload = cast(Unqual!S)s;
+        }
+        
+        void opAssign()(S s)
+        {
+            this = Rebindable(s);
+        }
+        
+        static if (!is(S == immutable))
+        ref S Rebindable_getRef() @property
+        {
+            // payload exposed as const ref when S is const
+            return payload;
+        }
+        
+        static if (is(S == immutable))
+        S Rebindable_get() @property @trusted
+        {
+            // we return a copy so cast to immutable is OK
+            return cast(S)payload;
+        }
+
+        static if (is(S == immutable))
+            alias Rebindable_get this;
+        else
+            alias Rebindable_getRef this;
+        
+        ~this() @trusted
+        {
+            import std.algorithm : move;
+            // call destructor with proper constness
+            S s = cast(S)move(payload);
+        }
+    }
 }
 
-///
+/// ditto
 Rebindable!S rebindable(S)(S s)
 if (is(S == struct))
 {
+    import std.traits : isMutable;
+
+    // workaround for rebindableS = rebindable(s)
     static if (isMutable!S)
         return s;
     else
