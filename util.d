@@ -148,27 +148,6 @@ auto delete_(T)(ref T* ptr) @system
     delete_(s);
     assert(j == 4);
     assert(s is null);
-    
-    // attempt to test new SA
-    //auto arr = new S[3]; // S[], can't make S[3]*
-    auto sa = newStaticArray!(S[3]);
-    //~ delete_(sa); // access violation?!
-    //~ *sa = (S[3]).init; // access violation?!
-    //~ assert(j == 7);
-    
-    // debug
-    S[3] arr;
-    //~ arr.destroy; // access violation?!
-    arr = arr.init;
-    assert(j == 7);
-}
-
-
-auto newStaticArray(SA:T[n], T, size_t n)() @trusted
-{
-	//auto data = new T[n]; // invalid memory operation on cast
-	auto data = new void[T.sizeof * n];
-	return cast(SA*)data.ptr;
 }
 
 
