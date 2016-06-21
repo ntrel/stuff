@@ -13,6 +13,8 @@ struct StaticArray(SA : T[n], T, size_t n)
 {
     private T[n] data;
 
+    enum length = n;
+
     alias StaticArray_get this;
 
     ref T[n] StaticArray_get() @property @system return
@@ -25,34 +27,29 @@ struct StaticArray(SA : T[n], T, size_t n)
     {
         data = sa;
     }
-
-    ///
-    T* ptr() @property @system
-    {
-        return data.ptr;
-    }
 }
 
 ///
 @safe unittest
 {
     alias SA = StaticArray!(int[2]);
-    auto sA = SA();
-    int[2] s;
+    auto sa = SA();
+    int[2] arr;
 
-    static assert(!__traits(compiles, s = sA));
-    static assert(!__traits(compiles, s = SA()));
-    static assert(!__traits(compiles, sA[]));
-    static assert(!__traits(compiles, sA.ptr));
+    static assert(sa.length == 2);
+    static assert(!__traits(compiles, arr = sa));
+    static assert(!__traits(compiles, arr = SA()));
+    static assert(!__traits(compiles, sa[]));
+    static assert(!__traits(compiles, sa.ptr));
 
     ()@trusted{
-        s = SA();
+        arr = SA();
         int[] invalid = SA();
-        int[] s2 = sA[];
-        int* p = sA.ptr;
-        assert(p is sA.data.ptr);
+        int[] s2 = sa[];
+        int* p = sa.ptr;
+        assert(p is sa.data.ptr);
     }();
 
-    sA = s;
+    sa = arr;
 }
 
