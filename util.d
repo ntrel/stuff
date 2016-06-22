@@ -5,17 +5,20 @@
 */
 
 /** Useful small utilities, mostly one-liners.
- * 
+ *
  * Functions:
  * $(LREF apply)
  * $(LREF assumeUnique)
  * $(LREF delete_)
  * $(LREF staticArray)
- * 
+ *
+ * Types:
+ * $(LREF StaticArray)
+ *
  * Templates:
  * $(LREF Apply)
  * $(LREF isVersion)
- * 
+ *
  * Macros:
  * LREF=<a href="#$1">$1</a>
  */
@@ -49,11 +52,11 @@ unittest
 {
     static assert(isVersion!"assert");
     static assert(!isVersion!"Broken");
-    
+
     import std.meta;
     alias allVersions = ApplyLeft!(allSatisfy, isVersion);
     static assert(allVersions!("assert", "unittest"));
-    
+
     alias anyVersions = ApplyLeft!(anySatisfy, isVersion);
     static assert(!anyVersions!("Broken", "Unsafe"));
 }
@@ -74,7 +77,7 @@ unittest
 {
     import std.meta : Alias, AliasSeq;
     enum size(T) = T.sizeof;
-    
+
     alias Seq = AliasSeq!size;
     // enum s1 = Seq[0]!byte; // error: semicolon expected, not '!'
     enum s1 = Apply!(Seq[0], byte);
@@ -96,10 +99,10 @@ alias apply(alias fun) = fun;
 unittest
 {
     import std.range;
-    
+
     auto str = "hem".dropBackOne.apply!(s => s ~ s);
     assert(str == "hehe");
-    
+
     str = "Jon".dropOne.apply!(s => "go" ~ s);
     assert(str == "goon");
 }
@@ -128,7 +131,7 @@ auto delete_(T)(ref T* ptr) @system
 }
 
 ///
-@system unittest
+unittest
 {
     int j;
     class C
@@ -136,18 +139,23 @@ auto delete_(T)(ref T* ptr) @system
         ~this(){j = 3;}
     }
     auto c = new C;
-    delete_(c);
+    ()@trusted {delete_(c);}();
     assert(j == 3);
     assert(c is null);
-    
+
     struct S
     {
         ~this(){j++;}
     }
     auto s = new S;
-    delete_(s);
+    ()@trusted {delete_(s);}();
     assert(j == 4);
     assert(s is null);
+
+    auto sa = new StaticArray!(S, 3);
+    ()@trusted {delete_(sa);}();
+    assert(sa is null);
+    assert(j == 7);
 }
 
 
@@ -195,5 +203,27 @@ pragma(inline, true)
     assert(arr == [1,2].staticArray);
 }
 
+
+/// Allows construction of a static array with `new`.
+struct StaticArray(T, size_t n)
+{
+    private T[n] data;
+    alias data this;
+}
+
+///
+unittest
+{
+    // Can't use new to make a static array
+    static assert(is(typeof(new int[2]) == int[]));
+
+    auto p = new StaticArray!(int, 2);
+    // ref sa = *p;
+    ref sa() @property return {return *p;}
+    sa[1] = 6;
+    sa[0] = sa[1];
+    assert(sa[0] == 6);
+    ()@trusted {delete_(p);}();
+}
 
 // TODO: frameArray, Set, staticEx
