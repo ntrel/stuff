@@ -31,63 +31,23 @@ struct StaticArray(SA : T[n], T, size_t n)
     }
 
     ///
-    bool opEquals(T[] s) {return data == s;}
+    bool opEquals(inout(T)[] s) {return data == s;}
 
     ///
     ref opIndex(size_t n) return {return data[n];}
 
     ///
-    Slice!T opSlice()
+    int opApply(scope int delegate(size_t, ref T) @safe fun)
     {
-        return data[].slice;
-    }
-}
-
-/** Immovable, non-copyable slice.
- * Also useful to force tuple unpacking on foreach(...; Tuple[]) */
-struct Slice(T)
-{
-    private T[] data;
-
-    ///
-    alias Slice_get this;
-
-    ref T[] Slice_get() @property @system return
-    {
-        return data;
-    }
-
-    // TODO: make std.algorithm.move respect this
-    Slice move() @disable;
-    this(this) @disable;
-
-    import std.range.primitives;
-    ///
-    bool empty() @property {return data.empty;}
-    ///
-    auto ref front() @property return {return data.front;}
-    ///
-    void popFront() {data.popFront;}
-
-    ///
-    T[] dup() {return data.dup;}
-    ///
-    immutable(T)[] idup() {return data.idup;}
-
-    ///
-    void opAssign(T[] s)
-    {
-        data[] = s;
+        foreach (i, e; data)
+            if (fun(i, e)) return 1;
+        return 0;
     }
 
     ///
-    bool opEquals(T[] s) {return data == s;}
-}
-
-/// ditto
-Slice!T slice(T)(T[] s)
-{
-    return Slice!T(s);
+    T[] dup(size_t start = 0, size_t end = n) {return data[start..end].dup;}
+    ///
+    immutable(T)[] idup(size_t start = 0, size_t end = n) {return data[start..end].idup;}
 }
 
 ///
@@ -95,7 +55,7 @@ Slice!T slice(T)(T[] s)
 {
     alias SA = StaticArray!(int[2]);
     auto sa = SA();
-    int[2] arr = [1, 2];
+    int[2] arr;
 
     static assert(sa.length == 2);
     static assert(!__traits(compiles, arr = sa));
@@ -103,18 +63,24 @@ Slice!T slice(T)(T[] s)
     static assert(!__traits(compiles, sa.ptr));
     static assert(!__traits(compiles, {int[] s = sa[];}));
 
+    arr = [1, 2];
     assert(sa == [0, 0]);
     sa = arr;
     assert(sa == [1, 2]);
-    arr[0] = 3;
-    sa[] = arr; // implicit slicing of int[2]
-    assert(sa[0] == 3);
-    sa[1] = 4;
-    assert(sa == [3, 4]);
-    sa[] = [5, 6];
-    assert(sa[] == [5, 6]);
 
-    ()@trusted{
+    sa[0] = 3;
+    assert(sa[0] == 3);
+    assert(sa == [3, 2]);
+    sa = [5, 6];
+    assert(sa == [5, 6]);
+    assert(sa == sa.dup);
+    assert(sa == sa.idup(0, 2));
+    assert(sa.dup(1) == [6]);
+
+    foreach (i, e; sa)
+        assert(sa[i] == e);
+
+    ()@trusted {
         // implicit conversion to int[2] in @system code
         arr = SA();
         int[] invalid = SA(); // due to compiler allowing implicit slicing of rvalue int[2]
