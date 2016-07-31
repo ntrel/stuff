@@ -24,6 +24,7 @@ void merge(T)(T[] left, T[] right) //@nogc
         writeln(left, right, li, ",", ri);
         if (left[li] > right[ri])
         {
+            // Use 3 sorted ranges: left, right[0..ri], right[ri..$]
             swap(left[li], right[ri]);
             writeln(left, right);
             if (ri + 1 == right.length)
