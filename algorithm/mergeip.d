@@ -19,7 +19,6 @@ void merge(T)(T[] left, T[] right) //@nogc
 
     // merge elements into left
     size_t li, ri;
-outer:
     while (1)
     {
         writeln(left, right, li, ",", ri);
