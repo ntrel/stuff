@@ -8,8 +8,8 @@
 // Worst case time not good, average case should be OK
 
 
-import std.algorithm : find, min, swap;
-import std.range.primitives;
+import std.algorithm : swap;
+import std.range.primitives : empty, hasAssignableElements;
 import std.stdio : writeln, writefln;
 
 void merge(T)(T[] left, T[] right) //@nogc
