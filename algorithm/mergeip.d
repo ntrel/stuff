@@ -4,48 +4,14 @@
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
 
-/// Merge in-place without allocating
+/// Merge in-place without heap allocation
+// Worst case time not good, average case should be OK
 
 
 import std.algorithm : find, min, swap;
 import std.range.primitives;
-debug import std.stdio : writeln, writefln;
+import std.stdio : writeln, writefln;
 
-version(Wrong)
-void merge(T)(T[] left, T[] right) @nogc
-    if (hasAssignableElements!(T[]))
-{
-    if (!right.length)
-        return;
-    debug writeln(left, right);
-
-    // skip in place elements
-    const r = right[0];
-    left = left.find!(e => e > r);
-    if (!left.length)
-        return;
-
-    // swap runs of elements
-    const len = min(left.length, right.length);
-    size_t i;
-    do
-    {
-        swap(left[i], right[i]);
-        i++;
-    } while (i != len && left[i] > right[i]);
-
-    // number of elements swapped
-    const n = i;
-    debug writefln(">%s%s; %s", left, right, n);
-
-    // may need to re-merge right if we ran out of left elements to swap
-    if (n == left.length)
-        merge(right[0..n], right[n..$]);
-    else
-        merge(left[n..$], right);
-}
-
-// FIXME
 void merge(T)(T[] left, T[] right) //@nogc
     if (hasAssignableElements!(T[]))
 {
@@ -56,43 +22,44 @@ void merge(T)(T[] left, T[] right) //@nogc
 outer:
     while (1)
     {
-import std.stdio; writeln(left, right);
+        writeln(left, right, li, ",", ri);
         if (left[li] > right[ri])
         {
             swap(left[li], right[ri]);
-            ri++;
-            if (ri == right.length) return;
+            writeln(left, right);
+            if (ri + 1 == right.length)
+            {
+                // merge right.back
+                merge(right[0..ri], right[ri..$]); // PERF: insert instead
+                // any remaining left elements
+                merge(left[li + 1..$], right);
+                return;
+            }
+            if (right[ri] > right[ri + 1])
+                ri++;
         }
-writeln(left, right);
         li++;
         if (li == left.length) break;
-        // ensure right[0] > left[li] and keep swapped elements in order
-        size_t ti;
-        while (ti < ri && left[li] > right[ti])
-        {
-            swap(left[li], right[ti]);
-writeln(left[li..$], right[0..ri], "-shift");
-            li++;
-            if (li == left.length)
-            {
-                merge(right[0..ti], right[ti..ri]);
-                break outer;
-            }
-            ti++;
-        }
+        // ensure right[0] > next left element
+        if (ri == 0 || left[li] <= right[0]) continue;
+        swap(left[li], right[0]);
+        writeln(left, right);
+        // keep temp swapped elements in order
+        merge(right[0..1], right[1..ri]); // PERF: insert instead
     }
-    // merge swapped elements
+    // merge temp swapped elements
     merge(right[0..ri], right[ri..$]);
 }
 
-version(Disabled)
 @safe unittest
 {
     void test(T)(T l, T r)
     {
         import std.algorithm : sort;
         const s = sort(l ~ r).release;
+        writeln("test");
         merge(l, r);
+        writeln(l,r);
         assert(l ~ r == s);
     }
     test([2,3,4], [1,3,5]);
@@ -118,6 +85,6 @@ version(Disabled)
     const sa = sort(a.dup).release;
     const n = a.length / 2;
     merge(a[0..n].sort().release, a[n..$].sort().release);
-import std.stdio; writeln(a); writeln(sa);
+    writeln(a); writeln(sa);
     assert(a == sa);
 }
