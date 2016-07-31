@@ -51,17 +51,25 @@ outer:
     merge(right[0..ri], right[ri..$]);
 }
 
+private
+void test(T)(T l, T r, bool slr = false)
+{
+    import std.algorithm : sort;
+    if (slr)
+    {
+        l.sort();
+        r.sort();
+    }
+    const sa = sort(l ~ r).release;
+    writeln("test");
+    merge(l, r);
+    writeln(l,r);
+    // checks isSorted + elements not modified
+    assert(l ~ r == sa);
+}
+
 @safe unittest
 {
-    void test(T)(T l, T r)
-    {
-        import std.algorithm : sort;
-        const s = sort(l ~ r).release;
-        writeln("test");
-        merge(l, r);
-        writeln(l,r);
-        assert(l ~ r == s);
-    }
     test([2,3,4], [1,3,5]);
     test([1,3,5], [2,3,4]);
     test([1,2], [4,5]);
@@ -82,9 +90,6 @@ outer:
         e = uniform(0, 100);
     }
     import std.algorithm : sort;
-    const sa = sort(a.dup).release;
     const n = a.length / 2;
-    merge(a[0..n].sort().release, a[n..$].sort().release);
-    writeln(a); writeln(sa);
-    assert(a == sa);
+    test(a[0..n], a[n..$], true);
 }
