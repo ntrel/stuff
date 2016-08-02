@@ -9,8 +9,13 @@
 
 
 import std.algorithm : swap;
-import std.range.primitives : empty, hasAssignableElements;
-import std.stdio : writeln, writefln;
+import std.range.primitives; //: empty, hasAssignableElements;
+import inssort;
+
+//~ debug
+    import std.stdio : writeln;
+//~ else
+    //~ void writeln(T...)(T){}
 
 void merge(T)(T[] left, T[] right) //@nogc
     if (hasAssignableElements!(T[]))
@@ -29,32 +34,34 @@ void merge(T)(T[] left, T[] right) //@nogc
             writeln(left, right);
             if (ri + 1 == right.length)
             {
-                // merge right.back
-                merge(right[0..ri], right[ri..$]); // PERF: insert instead
+                // order right.back in middle range
+                orderBack(right);
                 // any remaining left elements
                 merge(left[li + 1..$], right);
                 return;
             }
+            // minimize ri
             if (right[ri] > right[ri + 1])
                 ri++;
         }
         li++;
         if (li == left.length) break;
+
         // ensure right[0] > next left element
         if (ri == 0 || left[li] <= right[0]) continue;
         swap(left[li], right[0]);
         writeln(left, right);
-        // keep temp swapped elements in order
-        merge(right[0..1], right[1..ri]); // PERF: insert instead
+        // order right[0] in middle range
+        orderFront(right[0..ri]);
     }
-    // merge temp swapped elements
+    // merge middle range
     merge(right[0..ri], right[ri..$]);
 }
 
 private
 void test(T)(T l, T r, bool slr = false)
 {
-    import std.algorithm : sort;
+    import std.algorithm : isSorted, sort;
     if (slr)
     {
         l.sort();
@@ -64,7 +71,8 @@ void test(T)(T l, T r, bool slr = false)
     writeln("test");
     merge(l, r);
     writeln(l,r);
-    // checks isSorted + elements not modified
+    assert(isSorted(l ~ r));
+    // check elements weren't modified
     assert(l ~ r == sa);
 }
 
@@ -76,6 +84,7 @@ void test(T)(T l, T r, bool slr = false)
     test([4,5], [1,2]);
     test([4,5], [1,2,3]);
     test([4,5,6], [1,2]);
+    test([2, 8, 32, 34], [17, 30, 61, 68, 82]);
 }
 
 @safe unittest
