@@ -1,4 +1,4 @@
-@safe struct RefCountedSlice(T) {
+@safe struct RCSlice(T) {
     private T[] payload;
     private uint* count;
 
@@ -13,7 +13,7 @@
     }
 
     // Prevent reassignment as references to payload may still exist
-    @system opAssign(RefCountedSlice rhs) {
+    @system opAssign(RCSlice rhs) {
         this.__dtor();
         payload = rhs.payload;
         count = rhs.count;
@@ -39,11 +39,11 @@
 
 // Prevent premature destruction as references to payload may still exist
 // (defined in object.d)
-@system void destroy(T)(ref RefCountedSlice!T rcs);
+@system void destroy(T)(ref RCSlice!T rcs);
 
 @safe unittest
 {
-    alias RCS = RefCountedSlice!int;
+    alias RCS = RCSlice!int;
     static fun(ref RCS rc, ref int ri)
     {
         rc = rc.init; // Error: can't call opAssign in @safe code
