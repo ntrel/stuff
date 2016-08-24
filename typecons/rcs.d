@@ -1,7 +1,16 @@
 @safe struct RCSlice(T) {
-    private T[] payload;
-    private uint* count;
-
+private:
+    T[] payload;
+    uint* count;
+    
+    version(assert)
+    bool checkLive(T* ptr) {
+        assert(payload.ptr);
+        const pd = ptr - payload.ptr;
+        return pd >= 0 && pd < payload.length;
+    }
+    
+public:
     this(size_t initialSize) {
         payload = new T[initialSize];
         count = new size_t;
@@ -29,9 +38,9 @@
     }
 
     // Interesting fact #2: references to internals can be given away
-    //~ scope
-    ref T opIndex(size_t i) {
-        return payload[i];
+    //scope
+    auto opIndex(size_t i) @trusted {
+        return TempRef!T(&payload[i], &this.checkLive);
     }
 
     // ...
@@ -41,13 +50,32 @@
 // (defined in object.d)
 @system void destroy(T)(ref RCSlice!T rcs);
 
+@safe struct TempRef(T)
+{
+private:
+    T* pval;
+    version(assert)
+    bool delegate(T*) checkLive;
+    
+    @property //scope
+    ref get()
+    {
+        assert(checkLive(pval), "Invalid reference:" ~ T.stringof);
+        return *pval;
+    }
+
+public:
+    alias get this;
+    @disable this(this); // prevent copying & move?
+}
+
 @safe unittest
 {
     alias RCS = RCSlice!int;
     static fun(ref RCS rc, ref int ri)
     {
-        rc = rc.init; // Error: can't call opAssign in @safe code
-        rc.destroy;   // Error: can't call destroy(RCS) in @safe code
+        //rc = rc.init; // Error: can't call opAssign in @safe code
+        //rc.destroy;   // Error: can't call destroy(RCS) in @safe code
         ri++;         // would have been unsafe
     }
     auto rc = RCS(1);
