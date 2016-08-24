@@ -1,40 +1,40 @@
 @safe struct RefCountedSlice(T) {
-	private T[] payload;
-	private uint* count;
+    private T[] payload;
+    private uint* count;
 
-	this(size_t initialSize) {
-		payload = new T[initialSize];
-		count = new size_t;
-		*count = 1;
-	}
+    this(size_t initialSize) {
+        payload = new T[initialSize];
+        count = new size_t;
+        *count = 1;
+    }
 
-	this(this) {
-		if (count) ++*count;
-	}
+    this(this) {
+        if (count) ++*count;
+    }
 
-	// Prevent reassignment as references to payload may still exist
-	@system opAssign(RefCountedSlice rhs) {
-		this.__dtor();
-		payload = rhs.payload;
-		count = rhs.count;
-		++*count;
-	}
+    // Prevent reassignment as references to payload may still exist
+    @system opAssign(RefCountedSlice rhs) {
+        this.__dtor();
+        payload = rhs.payload;
+        count = rhs.count;
+        ++*count;
+    }
 
     // Interesting fact #1: destructor can be @trusted
-	@trusted ~this() {
-		if (count && !--*count) {
-			delete payload;
-			delete count;
-		}
-	}
+    @trusted ~this() {
+        if (count && !--*count) {
+            delete payload;
+            delete count;
+        }
+    }
 
     // Interesting fact #2: references to internals can be given away
-	//~ scope
-	ref T opIndex(size_t i) {
-		return payload[i];
-	}
+    //~ scope
+    ref T opIndex(size_t i) {
+        return payload[i];
+    }
 
-	// ...
+    // ...
 }
 
 // Prevent premature destruction as references to payload may still exist
