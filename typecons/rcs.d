@@ -5,9 +5,8 @@ private:
     
     version(assert)
     bool checkLive(T* ptr) {
-        assert(payload.ptr);
         const pd = ptr - payload.ptr;
-        return pd >= 0 && pd < payload.length;
+        return payload.ptr && pd >= 0 && pd < payload.length;
     }
     
 public:
@@ -21,12 +20,12 @@ public:
         if (count) ++*count;
     }
 
-    // Prevent reassignment as references to payload may still exist
-    @system opAssign(RCSlice rhs) {
+    void opAssign(RCSlice rhs) {
         this.__dtor();
         payload = rhs.payload;
         count = rhs.count;
-        ++*count;
+        if (count)
+            ++*count;
     }
 
     // Interesting fact #1: destructor can be @trusted
@@ -39,16 +38,12 @@ public:
 
     // Interesting fact #2: references to internals can be given away
     //scope
-    auto opIndex(size_t i) @trusted {
+    auto opIndex(size_t i) @trusted @nogc {
         return TempRef!T(&payload[i], &this.checkLive);
     }
 
     // ...
 }
-
-// Prevent premature destruction as references to payload may still exist
-// (defined in object.d)
-@system void destroy(T)(ref RCSlice!T rcs);
 
 @safe struct TempRef(T)
 {
@@ -72,13 +67,14 @@ public:
 @safe unittest
 {
     alias RCS = RCSlice!int;
-    static fun(ref RCS rc, ref int ri)
+    static fun(T)(ref RCS rc, ref T ri)
     {
-        //rc = rc.init; // Error: can't call opAssign in @safe code
-        //rc.destroy;   // Error: can't call destroy(RCS) in @safe code
-        ri++;         // would have been unsafe
+        rc = rc.init;
+        ri++;   // runtime error?
     }
     auto rc = RCS(1);
-    fun(rc, rc[0]);
+    //fun(rc, rc[0].get); // unsafe T=int, checkLive called too early
+    auto ri = rc[0]; // need lvalue for ref argument
+    fun(rc, ri);
     assert(rc[0] == 1);
 }
