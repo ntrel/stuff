@@ -10,6 +10,7 @@
  * $(LREF apply)
  * $(LREF assumeUnique)
  * $(LREF delete_)
+ * $(LREF deref)
  * $(LREF staticArray)
  *
  * Types:
@@ -156,6 +157,29 @@ unittest
     ()@trusted {delete_(sa);}();
     assert(sa is null);
     assert(j == 7);
+}
+
+
+/// Dereferences ptr. Helps to avoid bracket nesting.
+ref deref(T)(T* ptr){
+	return *ptr;
+}
+
+///
+unittest
+{
+	int i;
+	auto p = &i;
+	++*p;
+	assert(i == 1);
+	p.deref *= 2;	// post op without brackets
+	assert(i == 2);
+
+	import std.stdio;
+	p.deref.writeln;	// use in UFCS chains
+
+	i = deref([0, 3].ptr + 1);	// less syntax noise for more complicated expressions
+	assert(i == 3);
 }
 
 
