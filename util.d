@@ -11,6 +11,7 @@
  * $(LREF assumeUnique)
  * $(LREF delete_)
  * $(LREF deref)
+ * $(LREF frameArray)
  * $(LREF staticArray)
  *
  * Types:
@@ -180,6 +181,25 @@ unittest
 
 	i = deref([0, 3].ptr + 1);	// less syntax noise for more complicated expressions
 	assert(i == 3);
+}
+
+
+import core.stdc.stdlib : alloca;
+
+/// Dynamically allocates array memory on the caller's stack frame.
+T[] frameArray(T, alias size)(void* ptr = alloca(T.sizeof * size)){
+	auto pa = cast(T*)ptr;
+	return pa[0..size];
+}
+
+///
+unittest
+{
+	auto size = 1;
+	size++;
+	auto s = frameArray!(int, size);
+	s[] = [3, 4];
+	assert(s == [3, 4]);
 }
 
 
