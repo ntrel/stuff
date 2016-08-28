@@ -1,13 +1,9 @@
+//~ import std.stdio;
+
 @safe struct RCSlice(T) {
 private:
     T[] payload;
     uint* count;
-    
-    version(assert)
-    bool checkLive(T* ptr) {
-        const pd = ptr - payload.ptr;
-        return payload.ptr && pd >= 0 && pd < payload.length;
-    }
     
 public:
     this(size_t initialSize) {
@@ -39,7 +35,7 @@ public:
     // Interesting fact #2: references to internals can be given away
     //scope
     auto opIndex(size_t i) @trusted @nogc {
-        return TempRef!T(&payload[i], &this.checkLive);
+        return TempRef!T(&payload[i], &payload);
     }
 
     // ...
@@ -49,16 +45,22 @@ public:
 {
 private:
     T* pval;
-    version(assert)
-    bool delegate(T*) checkLive;
+    version(assert) T[]* pslice;
     
     @property //scope
     ref get()
     {
-        assert(checkLive(pval), "Invalid reference:" ~ T.stringof);
+        assert(checkLive(), "Invalid reference:" ~ T.stringof);
         return *pval;
     }
 
+    version(assert)
+    bool checkLive() {
+        const payload = *pslice;
+        const pd = pval - payload.ptr;
+        return payload.ptr && pd >= 0 && pd < payload.length;
+    }
+    
 public:
     alias get this;
     @disable this(this); // prevent copying & move?
