@@ -39,24 +39,34 @@ public:
     }
 
     // Interesting fact #2: references to internals can be given away
-    //scope
     auto opIndex(size_t i) @trusted {
-        return TempRef!T(&payload[i], this);
+        return TempRef!T(&payload[i], count);
     }
 
     // ...
 }
 
+// Ensure (using asserts) there's an independent RCO alive with longer lifetime
 @safe struct TempRef(T)
 {
 private:
     T* pval;
-    version(assert) RCSlice!T rcs;
+    version(assert) uint* count;
+    
+    this(T* pval, uint* count = null)
+    {
+        this.pval = pval;
+        version(assert)
+        {
+            this.count = count;
+            ++*count;
+        }
+    }
     
     void checkRef()
     {
         // Ensure it's not just our rcs keeping the memory alive
-        assert(*rcs.count > 1, "Invalid reference: " ~ RCSlice!T.stringof);
+        assert(*count > 1, "Invalid reference: " ~ TempRef.stringof);
     }
     
 public:
@@ -69,11 +79,13 @@ public:
     }
 
     alias get this;
+    
     @disable this(this); // prevent copying
     
     ~this()
     {
         checkRef;
+        version(assert) --*count;
     }
 }
 
