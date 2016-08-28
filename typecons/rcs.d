@@ -1,4 +1,10 @@
-//~ import std.stdio;
+/* Written in the D programming language.
+ * Copyright (c) 2016 by the D Language Foundation
+ * Authors: Walter Bright, Nick Treleaven
+ * License: Boost Software License, Version 1.0. See accompanying file
+ *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
+*/
+
 
 @safe struct RCSlice(T) {
 private:
@@ -34,8 +40,8 @@ public:
 
     // Interesting fact #2: references to internals can be given away
     //scope
-    auto opIndex(size_t i) @trusted @nogc {
-        return TempRef!T(&payload[i], &payload);
+    auto opIndex(size_t i) @trusted {
+        return TempRef!T(&payload[i], this);
     }
 
     // ...
@@ -45,38 +51,54 @@ public:
 {
 private:
     T* pval;
-    version(assert) T[]* pslice;
+    version(assert) RCSlice!T rcs;
     
-    @property //scope
-    ref get()
+    void checkRef()
     {
-        assert(checkLive(), "Invalid reference:" ~ T.stringof);
-        return *pval;
-    }
-
-    version(assert)
-    bool checkLive() {
-        const payload = *pslice;
-        const pd = pval - payload.ptr;
-        return payload.ptr && pd >= 0 && pd < payload.length;
+        // Ensure it's not just our rcs keeping the memory alive
+        assert(*rcs.count > 1, "Invalid reference: " ~ RCSlice!T.stringof);
     }
     
 public:
+    @property //scope
+    ref get()
+    {
+        // Detect invalid reference earlier in case TempRef lvalue is passed by ref
+        checkRef;
+        return *pval;
+    }
+
     alias get this;
-    @disable this(this); // prevent copying & move?
+    @disable this(this); // prevent copying
+    
+    ~this()
+    {
+        checkRef;
+    }
 }
 
+// Safe without -release
 @safe unittest
 {
     alias RCS = RCSlice!int;
     static fun(T)(ref RCS rc, ref T ri)
     {
         rc = rc.init;
-        ri++;   // runtime error?
+        ri++;
     }
+    
     auto rc = RCS(1);
-    //fun(rc, rc[0].get); // unsafe T=int, checkLive called too early
-    auto ri = rc[0]; // need lvalue for ref argument
+    {
+        auto copy = rc;
+        // Note: dmd wants lvalue for ref argument
+        // dmd could call `get` implicitly via alias this
+        fun(rc, rc[0].get); 
+        // refcount OK, checked when rc[0] temporary is destroyed
+        assert(!rc.count);
+        assert(copy[0] == 1);
+    }
+    rc = RCS(1);
+    auto ri = rc[0];
+    // Note: asserts earlier on ri++ line in fun instead of when ri is destroyed
     fun(rc, ri);
-    assert(rc[0] == 1);
 }
