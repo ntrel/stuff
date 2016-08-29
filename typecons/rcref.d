@@ -46,7 +46,7 @@ public:
     // ...
 }
 
-// Ensure (using asserts) there's an independent RCO alive with longer lifetime
+// Ensure on destruction there's an independent RCO alive with longer lifetime
 @safe struct RCRef(T)
 {
 private:
@@ -63,18 +63,10 @@ private:
         }
     }
 
-    void checkRef()
-    {
-        // Ensure it's not just our rcs keeping the memory alive
-        assert(*count > 1, "Invalid reference: " ~ RCRef.stringof);
-    }
-
 public:
     @property //scope
     ref get()
     {
-        // Detect invalid reference earlier in case RCRef lvalue is passed by ref
-        checkRef;
         return *pval;
     }
 
@@ -84,7 +76,8 @@ public:
 
     ~this()
     {
-        checkRef;
+        // Ensure it's not just our RCO keeping the memory alive
+        assert(*count > 1, "Invalid reference: " ~ RCRef.stringof);
         version(assert) --*count;
     }
 }
@@ -111,6 +104,6 @@ public:
     }
     rc = RCS(1);
     auto ri = rc[0];
-    // Note: asserts earlier on ri++ line in fun instead of when ri is destroyed
+    // Note: asserts when ri is destroyed
     fun(rc, ri);
 }
