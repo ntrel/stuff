@@ -76,6 +76,7 @@ public:
 
     ~this()
     {
+        assert(count);
         // Ensure it's not just our RCO keeping the memory alive
         assert(*count > 1, "Invalid reference: " ~ RCRef.stringof);
         version(assert) --*count;
@@ -106,4 +107,9 @@ public:
     auto ri = rc[0];
     // Note: asserts when ri is destroyed
     fun(rc, ri);
+    import core.exception, std.exception;
+    ()@trusted {assertThrown!AssertError(ri.destroy);}();
+
+    // Workaround: RCRef dtor doesn't expect ri to be destroyed
+    ri.count = new uint(2);
 }
