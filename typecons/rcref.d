@@ -10,7 +10,7 @@
 private:
     T[] payload;
     uint* count;
-    
+
 public:
     this(size_t initialSize) {
         payload = new T[initialSize];
@@ -40,19 +40,19 @@ public:
 
     // Interesting fact #2: references to internals can be given away
     auto opIndex(size_t i) @trusted {
-        return TempRef!T(&payload[i], count);
+        return RCRef!T(&payload[i], count);
     }
 
     // ...
 }
 
 // Ensure (using asserts) there's an independent RCO alive with longer lifetime
-@safe struct TempRef(T)
+@safe struct RCRef(T)
 {
 private:
     T* pval;
     version(assert) uint* count;
-    
+
     this(T* pval, uint* count = null)
     {
         this.pval = pval;
@@ -62,26 +62,26 @@ private:
             ++*count;
         }
     }
-    
+
     void checkRef()
     {
         // Ensure it's not just our rcs keeping the memory alive
-        assert(*count > 1, "Invalid reference: " ~ TempRef.stringof);
+        assert(*count > 1, "Invalid reference: " ~ RCRef.stringof);
     }
-    
+
 public:
     @property //scope
     ref get()
     {
-        // Detect invalid reference earlier in case TempRef lvalue is passed by ref
+        // Detect invalid reference earlier in case RCRef lvalue is passed by ref
         checkRef;
         return *pval;
     }
 
     alias get this;
-    
+
     @disable this(this); // prevent copying
-    
+
     ~this()
     {
         checkRef;
@@ -98,13 +98,13 @@ public:
         rc = rc.init;
         ri++;
     }
-    
+
     auto rc = RCS(1);
     {
         auto copy = rc;
         // Note: dmd wants lvalue for ref argument
         // dmd could call `get` implicitly via alias this
-        fun(rc, rc[0].get); 
+        fun(rc, rc[0].get);
         // refcount OK, checked when rc[0] temporary is destroyed
         assert(!rc.count);
         assert(copy[0] == 1);
