@@ -1,6 +1,6 @@
 /* Written in the D programming language.
  * Copyright (c) 2016 by the D Language Foundation
- * Authors: Walter Bright, Nick Treleaven
+ * Authors: Nick Treleaven, Walter Bright (RefCountedSlice)
  * License: Boost Software License, Version 1.0. See accompanying file
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
@@ -73,6 +73,7 @@ public:
     alias get this;
 
     @disable this(this); // prevent copying
+    @disable void opAssign(RCRef);
 
     ~this()
     {
@@ -94,22 +95,30 @@ public:
     }
 
     auto rc = RCS(1);
-    {
-        auto copy = rc;
-        // Note: dmd wants lvalue for ref argument
-        // dmd could call `get` implicitly via alias this
-        fun(rc, rc[0].get);
-        // refcount OK, checked when rc[0] temporary is destroyed
-        assert(!rc.count);
-        assert(copy[0] == 1);
-    }
-    rc = RCS(1);
+    auto copy = rc;
+    assert(*rc.count == 2);
+
+    assert(rc[0] == 0);
+    // Note: dmd wants lvalue for ref argument
+    // dmd could call `get` implicitly via alias this
+    fun(rc, rc[0].get);
+    // refcount OK due to copy
+    // count checked above when rc[0] temporary is destroyed
+    assert(!rc.count);
+    assert(copy[0] == 1);
+
+    import std.algorithm : move;
+    rc = copy.move;
+    assert(!copy.count);
+    assert(*rc.count == 1);
+
     auto ri = rc[0];
     // Note: asserts when ri is destroyed
     fun(rc, ri);
     import core.exception, std.exception;
     ()@trusted {assertThrown!AssertError(ri.destroy);}();
 
-    // Workaround: RCRef dtor doesn't expect ri to be destroyed
+    //assert(!ri.pval); // bug with destroy/dmd?
+    // RCRef dtor doesn't allow ri to be destroyed when ri dies
     ri.count = new uint(2);
 }
