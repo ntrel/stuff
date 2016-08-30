@@ -52,17 +52,21 @@ public:
     }
 }
 
+// Disable RC checking if bounds checking is disabled
+version (D_NoBoundsChecks){}
+else version = SafeRC;
+
 // Ensure on destruction there's an independent RCO alive with longer lifetime
 @safe struct RCRef(T)
 {
 private:
     T[] payload;
-    version(assert) uint* count;
+    version(SafeRC) uint* count;
 
     this(T[] payload, uint* count = null)
     {
         this.payload = payload;
-        version(assert)
+        version(SafeRC)
         {
             this.count = count;
             ++*count;
@@ -73,12 +77,13 @@ public:
     @disable this(this); // prevent copying
     @disable void opAssign(RCRef);
 
+    version(SafeRC)
     ~this()
     {
         assert(count);
         // Ensure it's not just our +1 keeping the memory alive
         assert(*count > 1, "Invalid reference: " ~ RCRef.stringof);
-        version(assert) --*count;
+        --*count;
     }
 
     //scope
@@ -89,13 +94,13 @@ public:
     // ...
 }
 
-@trusted checkAssert(lazy void ex)
+private @trusted checkAssert(lazy void ex)
 {
     import core.exception, std.exception;
     assertThrown!AssertError(ex);
 }
 
-/// Safe without -release:
+///
 @safe unittest
 {
     alias RCS = RCSlice!int;
@@ -128,7 +133,7 @@ public:
     assert(*rc.count == 1);
     assert(rc[0] == 2);
 
-    // call to fun is invalid as rc[0] outlives rc
+    // call to fun is invalid, as internally rc[0] outlives rc
     checkAssert(fun(rc, rc[0]));
     assert(!rc.count);
     // Note: old rc heap memory will leak (we ignored an AssertError)
