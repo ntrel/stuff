@@ -118,11 +118,15 @@ public:
     assert(*rc.count == 1);
     assert(rc[0] == 2);
 
+    static testThrown(lazy void ex) @trusted
+    {
+        import core.exception, std.exception;
+        assertThrown!AssertError(ex);
+    }
     auto ri = rc[0];
     // Note: asserts when ri is destroyed
     fun(rc, ri);
-    import core.exception, std.exception;
-    ()@trusted {assertThrown!AssertError(ri.destroy);}();
+    testThrown(ri.destroy);
 
     //assert(!ri.pval); // bug with destroy/dmd?
     // RCRef dtor doesn't allow ri to be destroyed when ri dies
