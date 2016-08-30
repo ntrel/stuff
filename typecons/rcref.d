@@ -64,7 +64,7 @@ private:
     }
 
 public:
-    @property //scope
+    @property //scope //private
     ref get()
     {
         return *pval;
@@ -88,12 +88,12 @@ public:
 @safe unittest
 {
     alias RCS = RCSlice!int;
-    static fun(T)(ref RCS rc, ref T ri)
+
+    static fun(ref RCS rc, ref int ri)
     {
         rc = rc.init;
         ri++;
     }
-
     auto rc = RCS(1);
     auto copy = rc;
     assert(*rc.count == 2);
@@ -107,10 +107,16 @@ public:
     assert(!rc.count);
     assert(copy[0] == 1);
 
-    import std.algorithm : move;
-    rc = copy.move;
-    assert(!copy.count);
+    void gun(ref int ri)
+    {
+        import std.algorithm : move;
+        rc = copy.move;
+        assert(!copy.count);
+        ri++;
+    }
+    gun(copy[0].get);
     assert(*rc.count == 1);
+    assert(rc[0] == 2);
 
     auto ri = rc[0];
     // Note: asserts when ri is destroyed
