@@ -94,10 +94,10 @@ public:
     // ...
 }
 
-private @trusted checkAssert(lazy void ex)
+private @trusted checkInvalidRef(lazy void ex)
 {
     import core.exception, std.exception;
-    assertThrown!AssertError(ex);
+    assert(collectExceptionMsg!AssertError(ex) == "Invalid reference: RCRef!int");
 }
 
 ///
@@ -134,7 +134,7 @@ private @trusted checkAssert(lazy void ex)
     assert(rc[0] == 2);
 
     // call to fun is invalid, as internally rc[0] outlives rc
-    checkAssert(fun(rc, rc[0]));
+    checkInvalidRef(fun(rc, rc[0]));
     assert(!rc.count);
     // Note: old rc heap memory will leak (we ignored an AssertError)
 }
