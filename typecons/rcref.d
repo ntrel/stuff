@@ -5,7 +5,12 @@
  *          LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.
 */
 
+/** Memory-safe Reference Counted Slice.
+ * Safety is enforced using a runtime check in RCRef's destructor.
+ * 'scope' is commented out until DIP1000 support is stable. */
 
+
+///
 @safe struct RCSlice(T) {
 private:
     T[] payload;
@@ -84,7 +89,13 @@ public:
     // ...
 }
 
-// Safe without -release
+@trusted checkAssert(lazy void ex)
+{
+    import core.exception, std.exception;
+    assertThrown!AssertError(ex);
+}
+
+/// Safe without -release:
 @safe unittest
 {
     alias RCS = RCSlice!int;
@@ -105,6 +116,7 @@ public:
     assert(!rc.count);
     assert(copy[0] == 1);
 
+    // nested references
     void gun(ref int ri)
     {
         import std.algorithm : move;
@@ -116,12 +128,8 @@ public:
     assert(*rc.count == 1);
     assert(rc[0] == 2);
 
-    static testAssert(lazy void ex) @trusted
-    {
-        import core.exception, std.exception;
-        assertThrown!AssertError(ex);
-    }
-    testAssert(fun(rc, rc[0]));
+    // call to fun is invalid as rc[0] outlives rc
+    checkAssert(fun(rc, rc[0]));
     assert(!rc.count);
-    // Note: old rc heap memory will leak as we caught AssertError
+    // Note: old rc heap memory will leak (we ignored an AssertError)
 }
