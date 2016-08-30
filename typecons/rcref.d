@@ -38,25 +38,25 @@ public:
         }
     }
 
+    alias get this;
+
     // Interesting fact #2: references to internals can be given away
     //scope
-    auto opIndex(size_t i) @trusted {
-        return RCRef!T(&payload[i], count);
+    private auto get() {
+        return RCRef!T(payload, count);
     }
-
-    // ...
 }
 
 // Ensure on destruction there's an independent RCO alive with longer lifetime
 @safe struct RCRef(T)
 {
 private:
-    T* pval;
+    T[] payload;
     version(assert) uint* count;
 
-    this(T* pval, uint* count = null)
+    this(T[] payload, uint* count = null)
     {
-        this.pval = pval;
+        this.payload = payload;
         version(assert)
         {
             this.count = count;
@@ -65,24 +65,23 @@ private:
     }
 
 public:
-    @property //scope //private
-    ref get()
-    {
-        return *pval;
-    }
-
-    alias get this;
-
     @disable this(this); // prevent copying
     @disable void opAssign(RCRef);
 
     ~this()
     {
         assert(count);
-        // Ensure it's not just our RCO keeping the memory alive
+        // Ensure it's not just our +1 keeping the memory alive
         assert(*count > 1, "Invalid reference: " ~ RCRef.stringof);
         version(assert) --*count;
     }
+
+    //scope
+    ref opIndex(size_t i) {
+        return payload[i];
+    }
+
+    // ...
 }
 
 // Safe without -release
@@ -100,11 +99,9 @@ public:
     assert(*rc.count == 2);
 
     assert(rc[0] == 0);
-    // Note: dmd wants lvalue for ref argument
-    // dmd could call `get` implicitly via alias this
-    fun(rc, rc[0].get);
+    fun(rc, rc[0]);
     // refcount OK due to copy
-    // count checked above when rc[0] temporary is destroyed
+    // count checked above when rc.get temporary is destroyed
     assert(!rc.count);
     assert(copy[0] == 1);
 
@@ -115,7 +112,7 @@ public:
         assert(!copy.count);
         ri++;
     }
-    gun(copy[0].get);
+    gun(copy[0]);
     assert(*rc.count == 1);
     assert(rc[0] == 2);
 
@@ -124,5 +121,7 @@ public:
         import core.exception, std.exception;
         assertThrown!AssertError(ex);
     }
-    testAssert(fun(rc, rc[0].get));
+    testAssert(fun(rc, rc[0]));
+    assert(!rc.count);
+    // Note: old rc heap memory will leak as we caught AssertError
 }
