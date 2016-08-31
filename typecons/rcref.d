@@ -7,6 +7,7 @@
 
 /** Memory-safe Reference Counted Slice.
  * Safety is enforced using a runtime check in RCRef's destructor.
+ * Note: Runtime check is disabled if -noboundscheck is passed.
  * 'scope' is commented out until DIP1000 support is stable. */
 
 
@@ -80,9 +81,12 @@ public:
     version(SafeRC)
     ~this()
     {
-        assert(count);
+        assert(count, "Attempting to destroy an invalid " ~ RCRef.stringof);
         // Ensure it's not just our +1 keeping the memory alive
-        assert(*count > 1, "Invalid reference: " ~ RCRef.stringof);
+        import core.exception;
+        if (*count <= 1)
+            throw new AssertError("Invalid reference: " ~ RCRef.stringof,
+                __FILE__, __LINE__);
         --*count;
     }
 
