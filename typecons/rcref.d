@@ -58,7 +58,8 @@ version (D_NoBoundsChecks){}
 else version = SafeRC;
 
 // Ensure on destruction there's an independent RCO alive with longer lifetime
-@safe struct RCRef(T)
+private @safe
+struct RCRef(T)
 {
 private:
     T[] payload;
