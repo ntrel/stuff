@@ -5,31 +5,44 @@
 {
 private:
 	T* data;
-	Length offset;	// mem = data - offset
+	Length offset;	// impl.data = data - offset
 	Length length;
 
 	struct Impl
 	{
 	private:
 		uint refCount;
+		Length size;
+		Length used;	// prevents stomping
 		T[0] data;
 	}
 
+	static @property allocSize(Length l){return Impl.sizeof + T.sizeof * l;}
+
 	this(Length size) @trusted
 	{
-		const n = Impl.sizeof + T.sizeof * size;
-		void[] mem = new ubyte[n];
+		void[] mem = new ubyte[allocSize(size)];
 		import core.memory, std.traits;
 		static if (hasIndirections!T)
-			GC.addRange(mem);
+			GC.addRange(mem.ptr, mem.length);
 
 		auto impl = cast(Impl*)mem.ptr;
 		impl.refCount = 1;
+		impl.size = size;
 		data = impl.data.ptr;
+	}
+
+	~this() @trusted
+	{
+		auto mem = cast(ubyte*)(data - offset) - Impl.sizeof;
+		import core.memory, std.traits;
+		static if (hasIndirections!T)
+			GC.removeRange(mem);
 	}
 }
 
 unittest
 {
 	RCSlice!int rcs;
+	RCSlice!Object rcs2;
 }
