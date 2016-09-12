@@ -164,24 +164,24 @@ unittest
 
 /// Dereferences ptr. Helps to avoid bracket nesting.
 ref deref(T)(T* ptr){
-	return *ptr;
+    return *ptr;
 }
 
 ///
 @system unittest
 {
-	int i;
-	auto p = &i;
-	++*p;
-	assert(i == 1);
-	p.deref *= 2;	// post op without brackets
-	assert(i == 2);
+    int i;
+    auto p = &i;
+    ++*p;
+    assert(i == 1);
+    p.deref *= 2;   // post op without brackets
+    assert(i == 2);
 
-	import std.stdio;
-	p.deref.writeln;	// use in UFCS chains
+    import std.stdio;
+    p.deref.writeln;    // use in UFCS chains
 
-	i = deref([0, 3].ptr + 1);	// less syntax noise for more complicated expressions
-	assert(i == 3);
+    i = deref([0, 3].ptr + 1);  // less syntax noise for more complicated expressions
+    assert(i == 3);
 }
 
 
@@ -191,18 +191,18 @@ import core.stdc.stdlib : alloca;
  * Warning: Memory is uninitialized. */
 T[] frameArray(T, alias size)(void* ptr = alloca(T.sizeof * size)) @system
 {
-	auto pa = cast(T*)ptr;
-	return pa[0..size];
+    auto pa = cast(T*)ptr;
+    return pa[0..size];
 }
 
 ///
 @system unittest
 {
-	auto size = 1;
-	size++;
-	auto s = frameArray!(int, size);
-	s[] = [3, 4];
-	assert(s == [3, 4]);
+    auto size = 1;
+    size++;
+    auto s = frameArray!(int, size);
+    s[] = [3, 4];
+    assert(s == [3, 4]);
 }
 
 
@@ -276,31 +276,31 @@ unittest
 
 ///
 alias staticEx(string msg, string file = __FILE__, size_t line = __LINE__) =
-	Apply!(.staticEx!(Exception, msg), file, line);
+    Apply!(.staticEx!(Exception, msg), file, line);
 
 /// ditto
 template staticEx(T:Throwable, args...)
 {
-	///
-	const(T) staticEx(string file = __FILE__, size_t line = __LINE__)() @nogc
-	{
-		// Note: druntime may modify exceptions so we don't use immutable storage
-		static const e = new T(args, file, line);
-		return e;
-	}
+    ///
+    const(T) staticEx(string file = __FILE__, size_t line = __LINE__)() @nogc
+    {
+        // Note: druntime may modify exceptions so we don't use immutable storage
+        static const e = new T(args, file, line);
+        return e;
+    }
 }
 
 ///
 @safe @nogc unittest
 {
-	try throw staticEx!"hi";
-	catch (Exception e) assert(e.msg == "hi");
+    try throw staticEx!"hi";
+    catch (Exception e) assert(e.msg == "hi");
 }
 
 /// Note: assertThrown not @nogc yet
 @safe unittest
 {
-	import std.conv, std.exception;
+    import std.conv, std.exception;
     assertThrown!ConvException({throw staticEx!(ConvException, "");}());
 }
 
