@@ -13,6 +13,7 @@
  * $(LREF deref)
  * $(LREF frameArray)
  * $(LREF staticArray)
+ * $(LREF staticEx)
  *
  * Types:
  * $(LREF StaticArray)
@@ -272,4 +273,35 @@ unittest
     ()@trusted {delete_(p);}();
 }
 
-// TODO: frameArray, Set, staticEx
+
+///
+alias staticEx(string msg, string file = __FILE__, size_t line = __LINE__) =
+	Apply!(.staticEx!(Exception, msg), file, line);
+
+/// ditto
+template staticEx(T:Throwable, args...)
+{
+	///
+	const(T) staticEx(string file = __FILE__, size_t line = __LINE__)() @nogc
+	{
+		// Note: druntime may modify exceptions so we don't use immutable storage
+		static const e = new T(args, file, line);
+		return e;
+	}
+}
+
+///
+@safe @nogc unittest
+{
+	try throw staticEx!"hi";
+	catch (Exception e) assert(e.msg == "hi");
+}
+
+/// Note: assertThrown not @nogc yet
+@safe unittest
+{
+	import std.conv, std.exception;
+    assertThrown!ConvException({throw staticEx!(ConvException, "");}());
+}
+
+// TODO: frameArray, Set
