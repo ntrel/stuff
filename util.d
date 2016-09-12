@@ -274,11 +274,7 @@ unittest
 }
 
 
-///
-alias staticEx(string msg, string file = __FILE__, size_t line = __LINE__) =
-    Apply!(.staticEx!(Exception, msg), file, line);
-
-/// ditto
+/// Statically construct `Throwable(args, file, line)`.
 template staticEx(T:Throwable, args...)
 {
     ///
@@ -289,6 +285,10 @@ template staticEx(T:Throwable, args...)
         return e;
     }
 }
+
+/// ditto
+alias staticEx(string msg, string file = __FILE__, size_t line = __LINE__) =
+    Apply!(.staticEx!(Exception, msg), file, line);
 
 ///
 @safe @nogc unittest
