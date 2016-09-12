@@ -167,7 +167,7 @@ ref deref(T)(T* ptr){
 }
 
 ///
-unittest
+@system unittest
 {
 	int i;
 	auto p = &i;
@@ -186,14 +186,16 @@ unittest
 
 import core.stdc.stdlib : alloca;
 
-/// Dynamically allocates array memory on the caller's stack frame.
-T[] frameArray(T, alias size)(void* ptr = alloca(T.sizeof * size)){
+/** Dynamically allocates array memory on the caller's stack frame.
+ * Warning: Memory is uninitialized. */
+T[] frameArray(T, alias size)(void* ptr = alloca(T.sizeof * size)) @system
+{
 	auto pa = cast(T*)ptr;
 	return pa[0..size];
 }
 
 ///
-unittest
+@system unittest
 {
 	auto size = 1;
 	size++;
