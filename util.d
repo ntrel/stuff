@@ -278,11 +278,15 @@ unittest
 template staticEx(T:Throwable, args...)
 {
     ///
-    const(T) staticEx(string file = __FILE__, size_t line = __LINE__)() @nogc
+    // Note: scoped not @nogc
+    const(T) staticEx(string file = __FILE__, size_t line = __LINE__)() @trusted //@nogc
     {
-        // Note: druntime may modify exceptions so we don't use immutable storage
-        static const e = new T(args, file, line);
-        return e;
+        import std.typecons : scoped;
+        alias SE = typeof(scoped!T(args));
+        // Note: druntime may modify exceptions in flight so don't use immutable storage
+        static se = SE.init;
+        se = scoped!T(args, file, line);
+        return se;
     }
 }
 
@@ -291,17 +295,20 @@ alias staticEx(string msg, string file = __FILE__, size_t line = __LINE__) =
     Apply!(.staticEx!(Exception, msg), file, line);
 
 ///
-@safe @nogc unittest
+//@nogc
+@safe unittest
 {
-    try throw staticEx!"hi";
-    catch (Exception e) assert(e.msg == "hi");
+    import std.exception;
+    assert(collectExceptionMsg({throw staticEx!"hi";}()) == "hi");
 }
 
-/// Note: assertThrown not @nogc yet
+///
+//@nogc (assertThrown)
 @safe unittest
 {
     import std.conv, std.exception;
     assertThrown!ConvException({throw staticEx!(ConvException, "");}());
 }
+
 
 // TODO: frameArray, Set
