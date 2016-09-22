@@ -32,16 +32,15 @@ private template expectType(T) {}
 private template expectBool(bool b) {}
 
 ///
-mixin template testInstanceFlag(string name, alias Template, Args...)
+template testInstanceFlag(alias Template, Args...)
 {
 	import std.traits : TemplateArgsOf;
 	import util : isVersion;
 	
-	private enum _ut = isVersion!"unittest" && isSame!(TemplateArgsOf!Template, Args);
-	static if (name != "_ut")
-	mixin("private enum " ~ name ~ " = _ut;");
+	private enum testInstanceFlag =
+		isVersion!"unittest" && isSame!(TemplateArgsOf!Template, Args);
 	
-	static if (!_ut)
+	static if (!testInstanceFlag)
 	unittest {
 		// Ensure instantiation with specific test arguments
 		alias TestInstance = Template!Args;
@@ -54,7 +53,7 @@ mixin template testInstanceFlag(string name, alias Template, Args...)
 	///
 	struct S(T)
 	{
-		mixin testInstanceFlag!("ut", S, int);
+		private enum ut = testInstanceFlag!(S, int);
 		
 		///
 		static myDocumentedSymbol(){}
