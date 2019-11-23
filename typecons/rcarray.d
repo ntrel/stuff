@@ -28,12 +28,14 @@ private:
     @property count() {return rc ? &rc.count : null;}
 
 public:
-    import core.stdc.stdlib : malloc, free;
+    import core.stdc.stdlib : calloc, free;
     import core.exception : RangeError;
 
     this(size_t initialSize) @trusted {
-        rc = cast(RCMem!T*) malloc(RCMem!T.sizeof + T.sizeof * initialSize);
+        //rc = cast(RCMem!T*) malloc(RCMem!T.sizeof + T.sizeof * initialSize);
+        rc = cast(RCMem!T*) calloc(1, RCMem!T.sizeof + T.sizeof * initialSize);
         rc.count = 1;
+        length = initialSize;
     }
 
     this(this) {
