@@ -11,44 +11,64 @@
  * 'scope' is commented out until DIP1000 support is stable. */
 
 
+struct RCMem(T)
+{
+    uint count;
+    T[0] _data;
+    
+    @property data() {return _data.ptr;}
+}
+
 ///
 @safe struct RCSlice(T) {
 private:
-    T[] payload;
-    uint* count;
+    RCMem!T* rc;
+    size_t length;
+    
+    @property count() {return rc ? &rc.count : null;}
 
 public:
-    this(size_t initialSize) {
-        payload = new T[initialSize];
-        count = new size_t;
-        *count = 1;
+    import core.stdc.stdlib : malloc, free;
+    import core.exception : RangeError;
+
+    this(size_t initialSize) @trusted {
+        rc = cast(RCMem!T*) malloc(RCMem!T.sizeof + T.sizeof * initialSize);
+        rc.count = 1;
     }
 
     this(this) {
-        if (count) ++*count;
+        if (rc) ++rc.count;
     }
 
-    void opAssign(RCSlice rhs) {
-        this.__dtor();
-        payload = rhs.payload;
-        count = rhs.count;
-        if (count)
-            ++*count;
+    void opAssign()(auto ref RCSlice rhs) {
+        this = rhs;
+        if (rc)
+            ++rc.count;
     }
 
     // Interesting fact #1: destructor can be @trusted
     @trusted ~this() {
-        if (count && !--*count) {
-            delete payload;
-            delete count;
+        if (rc && !--rc.count) {
+            free(rc);
         }
     }
 
-    alias get this;
+    T opIndex(size_t i) @trusted {
+        version (D_NoBoundsChecks){}
+        else if (i >= length) throw new RangeError;
+        return rc.data[i];
+    }
+
+    ref T unsafeItems(size_t i) @system {
+        version (D_NoBoundsChecks){}
+        else if (i >= length) throw new RangeError;
+        return rc.data[i];
+    }
 
     // Interesting fact #2: references to internals can be given away
     //scope
-    private auto get() {
+    version(None)
+    private auto items() {
         return RCRef!T(payload, count);
     }
 }
@@ -120,7 +140,8 @@ private @trusted checkInvalidRef(lazy void ex)
     assert(*rc.count == 2);
 
     assert(rc[0] == 0);
-    fun(rc, rc[0]);
+    static assert(!__traits(compiles, fun(rc, rc[0])));
+    //fun(rc, rc.items[0]);
     // refcount OK due to copy
     // count checked above when rc.get temporary is destroyed
     assert(!rc.count);
@@ -134,12 +155,12 @@ private @trusted checkInvalidRef(lazy void ex)
         assert(!copy.count);
         ri++;
     }
-    gun(copy[0]);
+    //gun(copy.items[0]);
     assert(*rc.count == 1);
     assert(rc[0] == 2);
 
     // call to fun is invalid, as internally rc[0] outlives rc
-    checkInvalidRef(fun(rc, rc[0]));
+    //checkInvalidRef(fun(rc, rc.items[0]));
     assert(!rc.count);
     // Note: old rc heap memory will leak (we ignored an AssertError)
 }

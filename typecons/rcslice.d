@@ -1,3 +1,4 @@
+/** WIP: A RC array that prevents stomping of immutable sliced data */
 
 /** Parameters:
  * Length=uint saves register space but limits allocation size */
