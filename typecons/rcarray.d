@@ -67,9 +67,9 @@ public:
 
     // Interesting fact #2: references to internals can be given away
     //scope
-    version(None)
-    private auto items() {
-        return RCRef!T(payload, count);
+    /// Preconditions: length > 0
+    @property get() @trusted {
+        return RCRef!T(rc.data[0..length], &rc.count);
     }
 }
 
@@ -141,26 +141,26 @@ private @trusted checkInvalidRef(lazy void ex)
 
     assert(rc[0] == 0);
     static assert(!__traits(compiles, fun(rc, rc[0])));
-    //fun(rc, rc.items[0]);
+    fun(rc, rc.get[0]);
     // refcount OK due to copy
     // count checked above when rc.get temporary is destroyed
     assert(!rc.count);
     assert(copy[0] == 1);
 
     // nested references
-    void gun(ref int ri)
+    void gun(ref int ri) @trusted //FIXME: why is move unsafe?
     {
         import std.algorithm : move;
         rc = copy.move;
         assert(!copy.count);
         ri++;
     }
-    //gun(copy.items[0]);
+    gun(copy.get[0]);
     assert(*rc.count == 1);
     assert(rc[0] == 2);
 
     // call to fun is invalid, as internally rc[0] outlives rc
-    //checkInvalidRef(fun(rc, rc.items[0]));
+    checkInvalidRef(fun(rc, rc.get[0]));
     assert(!rc.count);
     // Note: old rc heap memory will leak (we ignored an AssertError)
 }
