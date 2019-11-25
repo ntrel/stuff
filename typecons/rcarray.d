@@ -104,12 +104,9 @@ public:
     version(SafeRC)
     ~this()
     {
-        assert(count, "Attempting to destroy an invalid " ~ RCRef.stringof);
+        assert(count, RCRef.stringof ~ ": count is null");
         // Ensure it's not just our +1 keeping the memory alive
-        import core.exception;
-        if (*count <= 1)
-            throw new AssertError("Invalid reference: " ~ RCRef.stringof,
-                __FILE__, __LINE__);
+        assert(*count > 1, RCRef.stringof ~ ": no owner");
         --*count;
     }
 
@@ -124,7 +121,7 @@ public:
 private @trusted checkInvalidRef(lazy void ex)
 {
     import core.exception, std.exception;
-    assert(collectExceptionMsg!AssertError(ex) == "Invalid reference: RCRef!int");
+    assert(collectExceptionMsg!AssertError(ex) == "RCRef!int: no owner");
 }
 
 ///
