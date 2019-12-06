@@ -15,8 +15,6 @@ struct RCMem(T)
 {
     uint count;
     T[0] _data;
-    
-    @property data() {return _data.ptr;}
 }
 
 ///
@@ -26,7 +24,12 @@ private:
     size_t length;
     
     @property count() {return rc ? &rc.count : null;}
-
+    
+    @property data() @system
+    {
+        return rc._data.ptr[0..length];
+    }
+    
 public:
     import core.stdc.stdlib : calloc, free;
     import core.exception : RangeError;
@@ -56,22 +59,16 @@ public:
     }
 
     T opIndex(size_t i) @trusted {
-        version (D_NoBoundsChecks){}
-        else if (i >= length) throw new RangeError;
-        return rc.data[i];
+        return data[i];
     }
 
-    ref T unsafeItems(size_t i) @system {
-        version (D_NoBoundsChecks){}
-        else if (i >= length) throw new RangeError;
-        return rc.data[i];
+    @property T[] items() @system {
+        return data;
     }
 
-    // Interesting fact #2: references to internals can be given away
     //scope
-    /// Preconditions: length > 0
     @property get() @trusted {
-        return RCRef!T(rc.data[0..length], &rc.count);
+        return RCRef!T(data, &rc.count);
     }
 }
 
@@ -104,12 +101,13 @@ public:
     version(SafeRC)
     ~this()
     {
-        assert(count, RCRef.stringof ~ ": count is null");
+        debug assert(count, RCRef.stringof ~ ": count is null");
         // Ensure it's not just our +1 keeping the memory alive
         assert(*count > 1, RCRef.stringof ~ ": no owner");
         --*count;
     }
 
+    // Interesting fact #2: references to internals can be given away
     //scope
     ref opIndex(size_t i) {
         return payload[i];
