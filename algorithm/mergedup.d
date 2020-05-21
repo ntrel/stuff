@@ -33,8 +33,29 @@ if (__traits(compiles, b[0] - a[0]))
 	return result;
 }
 
+import std.stdio;
 unittest
 {
-	import std.stdio;
 	merge([1,3,4,6],[2,3,5]).writeln;
+}
+
+// TODO: share result array
+/// Unique merge sort
+auto mergeSort(T)(T[] a)
+{
+	if (a.length < 2)
+		return a;
+	import std.algorithm : swap;
+	if (a.length == 2)
+	{
+		auto cmp = a[1] - a[0];
+		return (cmp > 0) ? a :
+			(cmp < 0) ? [a[1], a[0]] : a[0..1];
+	}
+	return merge(mergeSort(a[0..$/2]), mergeSort(a[$/2..$]));
+}
+
+unittest
+{
+	mergeSort([4,2,5,1,3,4,2,2]).writeln;
 }
