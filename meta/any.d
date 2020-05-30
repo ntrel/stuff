@@ -1,3 +1,4 @@
+// 0.113s vs 0.133s for core.internal.traits
 template anySatisfy(alias F, T...)
 {
 	static if (T.length == 0)
@@ -17,7 +18,12 @@ template anySatisfy(alias F, T...)
 				static if (F!(T[3]))
 					enum anySatisfy = true;
 				else
-					enum anySatisfy = anySatisfy!(F, T[4..$]);
+				{
+					static if (anySatisfy!(F, T[4..$][0..$/2]))
+						enum anySatisfy = true;
+					else
+						enum anySatisfy = anySatisfy!(F, T[4..$][$/2..$]);
+				}
 			}
 			else
 				enum anySatisfy = false;
@@ -32,6 +38,7 @@ template anySatisfy(alias F, T...)
 ///
 @safe unittest
 {
+    //~ import std.meta : anySatisfy;
     import std.traits : isIntegral;
     import std.meta : Repeat;
 
@@ -45,4 +52,17 @@ template anySatisfy(alias F, T...)
 		static assert(anySatisfy!(isIntegral, S, int, S));
 	}}
 }
+
+@safe unittest
+{
+    //~ import std.meta : anySatisfy;
+    import std.meta : Repeat;
+    import std.traits : isIntegral;
+
+    enum n = 512;
+    alias a = Repeat!(n, string);
+    static assert(!anySatisfy!(isIntegral, a));
+    static assert( anySatisfy!(isIntegral, a, int));
+}
+
 
