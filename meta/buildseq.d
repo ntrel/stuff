@@ -31,6 +31,9 @@ alias Repeat(size_t n, S...) =
 alias ReplaceAll(alias T, alias U, S...) =
 	static foreach(E; S; AliasSeq!(E, U)[isSame!(E, T)]);
 
+alias Reverse(S...) =
+	static foreach(i; 0..S.length; S[$ - 1 - i]);
+
 template Stride(int stepSize, S...)
 if (stepSize != 0)
 {
