@@ -29,7 +29,7 @@ FoldLoopDecl~=
 /// stop evaluating when the while condition is no longer true
 // isSame may be expensive, so avoid more instantiation after first match
 enum staticIndexOf(alias A, S...) =
-    __Fold(size_t acc = -1; foreach(i, E; S) while (acc == -1)
+    __Fold(int acc = -1; foreach(i, E; S) while (acc == -1)
         => [-1, i][isSame!(A, E)];
 
 /// we can't implement std.traits.fullyQualifiedName with foreach
@@ -84,7 +84,7 @@ FoldLoopDecl~=
     for(Declaration; Expression; AssignExpression)
 
 enum staticIndexOf(alias A, S...) =
-    __Fold(size_t acc = -1; for(size_t i = 0; acc == -1 && i != S.length; i++)
+    __Fold(int acc = -1; for(uint i = 0; acc == -1 && i != S.length; i++)
         => [-1, i][isSame!(A, S[i])];
 
 enum fqn(alias A) =
