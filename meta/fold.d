@@ -13,7 +13,7 @@ alias Map(alias Tem, S...) =
     __Fold(Acc...; foreach(E; S) => AliasSeq!(Acc, Tem!E))
 
 alias Filter(alias pred, S...) =
-    __Fold!(Acc...; foreach(E; S) => AliasSeq!(Acc, AliasSeq!E[0..pred!E]));
+    __Fold(Acc...; foreach(E; S) => AliasSeq!(Acc, AliasSeq!E[0..pred!E]));
 
 alias NoDuplicates(S...) =
     __Fold(Acc...; foreach(E; S) =>
@@ -26,7 +26,7 @@ FoldLoopDecl~=
 
 // stop evaluating when the while condition is no longer true
 enum staticIndexOf(alias A, S...) =
-    __Fold!(size_t acc = -1; foreach(i, E; S) while (acc == -1)
+    __Fold(size_t acc = -1; foreach(i, E; S) while (acc == -1)
         => [-1, i][isSame!(A, E)];
 
 /// we can't implement std.traits.fullyQualifiedName with foreach
@@ -38,7 +38,7 @@ FoldLoopDecl~=
 
 // acc is (sIndex, matchIndex)
 enum staticIndexOf(alias A, S...) =
-    __Fold!(int[2] acc = [0, -1]; while (acc[1] == -1 && acc[0] != S.length)
+    __Fold(int[2] acc = [0, -1]; while (acc[1] == -1 && acc[0] != S.length)
         => [acc[0] + 1, [-1, acc[0]][isSame!(A, S[acc[0]])]])[1];
 
 // fullyQualifiedName
@@ -53,7 +53,7 @@ AccumulatorDecl~=
 // NextExpression must be a sequence whose length must correspond to the AccumulatorDecls
 // Only one AccumulatorDecl can be a sequence
 enum staticIndexOf(alias A, S...) =
-    __Fold!(int acc = -1; uint i = 0; while (acc == -1 && i != S.length)
+    __Fold(int acc = -1; uint i = 0; while (acc == -1 && i != S.length)
         => AliasSeq!([-1, i][isSame!(A, S[i])], i + 1))[0];
 
 enum fqn(alias A) =
@@ -65,7 +65,7 @@ FoldLoopDecl~=
     for(Declaration; Expression; AssignExpression)
 
 enum staticIndexOf(alias A, S...) =
-    __Fold!(size_t acc = -1; for(size_t i = 0; acc == -1 && i != S.length; i++)
+    __Fold(size_t acc = -1; for(size_t i = 0; acc == -1 && i != S.length; i++)
         => [-1, i][isSame!(A, S[i])];
 
 enum fqn(alias A) =
