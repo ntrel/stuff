@@ -64,6 +64,21 @@ enum fqn(alias A) =
     __Fold(string acc = ""; alias P = A; while (!__traits(isSame, P, null))
         => AliasSeq!(acc ~ P.stringof, __traits(parent, P)))[0];
 
+template Merge(alias Less, uint half, S...)
+{
+    alias Result = __Fold(uint i = 0; uint j = half; Acc...;
+        while (i != half && j != S.length)
+            => AliasSeq!(
+                i + Less!(S[i], S[j]),
+                j + !Less!(S[i], S[j]), Acc,
+                AliasSeq!(S[i], S[j])[Less!(S[i], S[j])]));
+
+    // fold handles minLength(half, S.length - half) elements of S
+    // then append any remaining elements
+    alias Merge = AliasSeq!(Result[2..$],
+        S[Result[0]..half], S[Result[1]..$]);
+}
+
 /// this form separates the loop logic from the NextExpression
 FoldLoopDecl~=
     for(Declaration; Expression; AssignExpression)
@@ -75,3 +90,5 @@ enum staticIndexOf(alias A, S...) =
 enum fqn(alias A) =
     __Fold(string acc; for(alias P = A; !__traits(isSame, P, null); P = __traits(parent, P))
          => acc ~ P.stringof);
+
+/// can't implement Merge because i,j are incremented independently
