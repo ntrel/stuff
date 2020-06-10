@@ -12,6 +12,8 @@ AccumulatorDecl:
 alias Map(alias Tem, S...) =
     __Fold(Acc...; foreach(E; S) => AliasSeq!(Acc, Tem!E))
 
+/// this file makes extensive use of bool converting to 0 or 1
+// pred!E gives 0 or 1
 alias Filter(alias pred, S...) =
     __Fold(Acc...; foreach(E; S) => AliasSeq!(Acc, AliasSeq!E[0..pred!E]));
 
@@ -24,13 +26,15 @@ alias NoDuplicates(S...) =
 FoldLoopDecl~=
     FoldLoopDecl while (Expression)
 
-// stop evaluating when the while condition is no longer true
+/// stop evaluating when the while condition is no longer true
+// isSame may be expensive, so avoid more instantiation after first match
 enum staticIndexOf(alias A, S...) =
     __Fold(size_t acc = -1; foreach(i, E; S) while (acc == -1)
         => [-1, i][isSame!(A, E)];
 
 /// we can't implement std.traits.fullyQualifiedName with foreach
 
+/// make the accumulator include other info as additional element(s)
 // this form is hard to read, see the next grammar variant for better syntax
 // this form allows the NextExpression to be e.g. int[2] rather than an AliasSeq
 FoldLoopDecl~=
