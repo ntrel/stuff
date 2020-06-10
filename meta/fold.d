@@ -1,18 +1,31 @@
 FoldExpression:
-    __Fold(ElemIdentifier, AccIdentifier, NextExpression, SeqExpression, SeedExpression$(OPT))
-
-alias Filter(alias pred, S...) =
-    __Fold(E, Acc, AliasSeq!(Acc, AliasSeq!E[0..pred!E]), S, AliasSeq!());
-
-alias Fold(alias Tem, S...) =
-    __Fold(E, Acc, Tem!(E, Acc), S);
+    __Fold(AccumulatorDecl $(OPT = Expression); FoldLoopDecl => NextExpression)
+FoldLoopDecl:
+    foreach(Identifier; SeqExpression)
+    foreach(Identifier; LwrExpression .. UprExpression)
+AccumulatorDecl:
+    Identifier
+    BasicType Identifier
+    alias Identifier
+    Identifier...
 
 alias Map(alias Tem, S...) =
-    __Fold(E, Acc, AliasSeq!(Acc, Tem!E), S, AliasSeq!());
+    __Fold(Acc...; foreach(E; S) => AliasSeq!(Acc, Tem!E))
+
+alias Filter(alias pred, S...) =
+    __Fold!(Acc...; foreach(E; S) => AliasSeq!(Acc, AliasSeq!E[0..pred!E]));
 
 alias NoDuplicates(S...) =
-    __Fold(E, Acc, AliasSeq!(Acc, AliasSeq!E[0..staticIndexOf!(E, Acc) == -1]), S);
+    __Fold(Acc...; foreach(E; S) =>
+        AliasSeq!(Acc, AliasSeq!E[0..staticIndexOf!(E, Acc) == -1]));
 
-alias Repeat(size_t n, S...) =
-    __Fold(E, Acc, AliasSeq!(Acc, S), S, AliasSeq!());
+FoldLoopDecl~=
+    for(Declaration; Expression; AssignExpression)
 
+enum staticIndexOf(alias A, S...) =
+    __Fold!(size_t acc = -1; for(size_t i = 0; acc == -1 && i != S.length; i++)
+        => [-1, i][isSame!(A, S[i])];
+
+enum fqn(alias A) =
+    __Fold(string acc; for(alias P = A; !__traits(isSame, P, null); P = __traits(parent, P))
+         => acc ~ P.stringof);
