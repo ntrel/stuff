@@ -54,8 +54,8 @@ enum fqn(alias A) =
 AccumulatorDecl~=
     AccumulatorDecl; AccumulatorDecl
 
-// NextExpression must be a sequence whose length must correspond to the AccumulatorDecls
-// Only one AccumulatorDecl can be a sequence
+/// each NextExpression is unpacked to match the AccumulatorDecls
+/// Limitation: Only one AccumulatorDecl can be a sequence
 enum staticIndexOf(alias A, S...) =
     __Fold(int acc = -1; uint i = 0; while (acc == -1 && i != S.length)
         => AliasSeq!([-1, i][isSame!(A, S[i])], i + 1))[0];
