@@ -35,20 +35,30 @@ enum staticIndexOf(alias A, S...) =
 /// we can't implement std.traits.fullyQualifiedName with foreach
 
 /// make the accumulator include other info as additional element(s)
-// this form is hard to read, see the next grammar variant for better syntax
-// this form allows the NextExpression to be e.g. int[2] rather than an AliasSeq
 FoldLoopDecl~=
     while (Expression)
 
+// Use the accumulator length to index S
+alias Map(alias Tem, S...) =
+    __Fold(Acc...; while (Acc.length != S.length) =>
+        AliasSeq!(Acc, Tem!(S[Acc.length])));
+
+/// the following examples are hard to read, see the next grammar
+/// variant for better syntax
+// although this form allows a NextExpression of int[2] rather than an AliasSeq
 // acc is (sIndex, matchIndex)
 enum staticIndexOf(alias A, S...) =
     __Fold(int[2] acc = [0, -1]; while (acc[1] == -1 && acc[0] != S.length)
         => [acc[0] + 1, [-1, acc[0]][isSame!(A, S[acc[0]])]])[1];
 
-// fullyQualifiedName
+// similar to std.traits.fullyQualifiedName (the real version would
+// instantiate a formatting template instead of using stringof).
+// use a 2-element AliasSeq for the AccumulatorDecl as A is not a value
 enum fqn(alias A) =
-    __Fold(Acc... = AliasSeq!(A, ""); while (!__traits(isSame, Acc[0], null))
-        => AliasSeq!(__traits(parent, Acc[0]), Acc[1] ~ Acc[0].stringof))[1];
+    __Fold(Acc... = AliasSeq!(A.stringof, A);
+        while (__traits(compiles(parent, Acc[1])) =>
+            AliasSeq!(__traits(parent, Acc[1]).stringof ~ '.' ~ Acc[0],
+                __traits(parent, Acc[1])))[0];
 
 /// this form allows separate naming of each component of the accumulator above
 AccumulatorDecl~=
@@ -61,8 +71,10 @@ enum staticIndexOf(alias A, S...) =
         => AliasSeq!([-1, i][isSame!(A, S[i])], i + 1))[0];
 
 enum fqn(alias A) =
-    __Fold(string acc = ""; alias P = A; while (!__traits(isSame, P, null))
-        => AliasSeq!(acc ~ P.stringof, __traits(parent, P)))[0];
+    __Fold(string acc = A.stringof; alias S = A;
+        while (__traits(compiles(parent, S)) =>
+            AliasSeq!(__traits(parent, S).stringof ~ '.' ~ acc,
+                __traits(parent, S)))[0];
 
 template Merge(alias Less, uint half, S...)
 {
@@ -83,12 +95,18 @@ template Merge(alias Less, uint half, S...)
 FoldLoopDecl~=
     for(Declaration; Expression; AssignExpression)
 
+alias Map(alias Tem, S...) =
+    __Fold(Acc...; for (uint i = 0; i != S.length; i++) =>
+        AliasSeq!(Acc, Tem!(S[i])));
+
 enum staticIndexOf(alias A, S...) =
-    __Fold(int acc = -1; for(uint i = 0; acc == -1 && i != S.length; i++)
+    __Fold(int acc = -1; for (uint i = 0; acc == -1 && i != S.length; i++)
         => [-1, i][isSame!(A, S[i])];
 
 enum fqn(alias A) =
-    __Fold(string acc; for(alias P = A; !__traits(isSame, P, null); P = __traits(parent, P))
-         => acc ~ P.stringof);
+    __Fold(string acc = A.stringof;
+        for (alias S = A;
+            __traits(compiles(parent, S)); S = __traits(parent, S))
+            => __traits(parent, S).stringof ~ '.' ~ acc);
 
 /// can't implement Merge because i,j are incremented independently
