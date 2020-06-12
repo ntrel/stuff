@@ -76,6 +76,7 @@ enum fqn(alias A) =
             AliasSeq!(__traits(parent, S).stringof ~ '.' ~ acc,
                 __traits(parent, S)))[0];
 
+/// branchless style here is repetitive, see Block form at end
 template Merge(alias Less, uint half, S...)
 {
     alias Result = __Fold(uint i = 0; uint j = half; Acc...;
@@ -110,3 +111,34 @@ enum fqn(alias A) =
             => __traits(parent, S).stringof ~ '.' ~ acc);
 
 /// can't implement Merge because i,j are incremented independently
+
+FoldExpression:
+    __Fold(AccumulatorDecls) if (Expression) NextExpression
+    __Fold(AccumulatorDecls) if (Expression) {FoldStatements}
+NextExpression:
+    __Fold!(Expressions)
+FoldStatement:
+    NextExpression;
+    static if (Expression) FoldStatement else FoldStatement
+    enum Identifier = Expression; FoldStatement
+    alias Identifier = Expression; FoldStatement
+
+alias Map(alias Tem, S...) =
+    __Fold(Acc...) if (Acc.length != S.length) =>
+        __Fold!(Acc, Tem!(S[Acc.length]));
+
+template Merge(alias Less, uint half, S...)
+{
+    alias Result = __Fold(uint i = 0; uint j = half; Acc...)
+        if (i != half && j != S.length) {
+            static if (Less!(S[i], S[j]))
+                __Fold!(i + 1, j, Acc, S[i]);
+            else
+                __Fold!(i, j + 1, Acc, S[j]);
+        };
+    // fold handles min(half, S.length - half) elements of S
+    // then append any remaining elements
+    alias Merge = AliasSeq!(Result[2..$],
+        S[Result[0]..half], S[Result[1]..$]);
+}
+
