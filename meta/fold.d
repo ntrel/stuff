@@ -30,7 +30,7 @@ FoldLoopDecl~=
 // isSame may be expensive, so avoid more instantiation after first match
 enum staticIndexOf(alias A, S...) =
     __Fold(int acc = -1; foreach(i, E; S) while (acc == -1)
-        => [-1, i][isSame!(A, E)];
+        => [-1, i][isSame!(A, E)]);
 
 /// we can't implement std.traits.fullyQualifiedName with foreach
 
@@ -56,7 +56,7 @@ enum staticIndexOf(alias A, S...) =
 // use a 2-element AliasSeq for the AccumulatorDecl as A is not a value
 enum fqn(alias A) =
     __Fold(Acc... = AliasSeq!(A.stringof, A);
-        while (__traits(compiles(parent, Acc[1])) =>
+        while (__traits(compiles(parent, Acc[1]))) =>
             AliasSeq!(__traits(parent, Acc[1]).stringof ~ '.' ~ Acc[0],
                 __traits(parent, Acc[1])))[0];
 
@@ -72,7 +72,7 @@ enum staticIndexOf(alias A, S...) =
 
 enum fqn(alias A) =
     __Fold(string acc = A.stringof; alias S = A;
-        while (__traits(compiles(parent, S)) =>
+        while (__traits(compiles(parent, S))) =>
             AliasSeq!(__traits(parent, S).stringof ~ '.' ~ acc,
                 __traits(parent, S)))[0];
 
@@ -85,7 +85,7 @@ template Merge(alias Less, uint half, S...)
                 j + !Less!(S[i], S[j]), Acc,
                 AliasSeq!(S[i], S[j])[Less!(S[i], S[j])]));
 
-    // fold handles minLength(half, S.length - half) elements of S
+    // fold handles min(half, S.length - half) elements of S
     // then append any remaining elements
     alias Merge = AliasSeq!(Result[2..$],
         S[Result[0]..half], S[Result[1]..$]);
@@ -101,7 +101,7 @@ alias Map(alias Tem, S...) =
 
 enum staticIndexOf(alias A, S...) =
     __Fold(int acc = -1; for (uint i = 0; acc == -1 && i != S.length; i++)
-        => [-1, i][isSame!(A, S[i])];
+        => [-1, i][isSame!(A, S[i])]);
 
 enum fqn(alias A) =
     __Fold(string acc = A.stringof;
