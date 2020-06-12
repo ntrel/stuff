@@ -113,19 +113,41 @@ enum fqn(alias A) =
 /// can't implement Merge because i,j are incremented independently
 
 FoldExpression:
-    __Fold(AccumulatorDecls) if (Expression) NextExpression
     __Fold(AccumulatorDecls) if (Expression) {FoldStatements}
-NextExpression:
-    __Fold!(Expressions)
 FoldStatement:
-    NextExpression;
+    __Fold!(Expressions);
     static if (Expression) FoldStatement else FoldStatement
     enum Identifier = Expression; FoldStatement
     alias Identifier = Expression; FoldStatement
 
 alias Map(alias Tem, S...) =
-    __Fold(Acc...) if (Acc.length != S.length) =>
+    __Fold(Acc...) if (Acc.length != S.length) {
         __Fold!(Acc, Tem!(S[Acc.length]));
+    };
+
+alias Filter(alias pred, S...) =
+    __Fold(uint i = 0; Acc...) if (i != S.length) {
+        static if (pred!(S[i]))
+            __Fold!(i + 1, Acc, S[i]);
+        else
+            __Fold!(i + 1, Acc);
+    }[1..$];
+
+enum staticIndexOf(alias A, S...) =
+    __Fold(int acc = -1; uint i = 0) if (acc == -1 && i != S.length) {
+        static if (isSame!(A, S[i]))
+            __Fold!(i, i + 1));
+        else
+            __Fold!(-1, i + 1);
+    }[0];
+
+alias NoDuplicates(S...) =
+    __Fold(uint i = 0; Acc...) if (i != S.length) {
+        static if (staticIndexOf!(E, Acc) == -1)
+            __Fold!(i + 1, Acc);
+        else
+            __Fold!(i + 1, Acc, S[i]);
+    }[1..$];
 
 template Merge(alias Less, uint half, S...)
 {
