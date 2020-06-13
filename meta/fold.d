@@ -139,13 +139,23 @@ alias Filter(alias pred, S...) =
             __Fold!(i + 1, Acc);
     }[1..$];
 
+enum anySatisfy(alias pred, S...) =
+    __Fold(bool found = false; uint i = 0)
+        if (!found && i != S.length) {
+            static if (pred!(S[i]))
+                __Fold!(true, i);
+            else
+                __Fold!(false, i + 1);
+        }[1];
+
 enum staticIndexOf(alias A, S...) =
-    __Fold(int acc = -1; uint i = 0) if (acc == -1 && i != S.length) {
-        static if (isSame!(A, S[i]))
-            __Fold!(i, i + 1));
-        else
-            __Fold!(-1, i + 1);
-    }[0];
+    __Fold(bool found = false; uint i = 0)
+        if (!found && i != S.length) {
+            static if (isSame!(A, S[i]))
+                __Fold!(true, i));
+            else
+                __Fold!(false, i + 1);
+        }[1];
 
 alias NoDuplicates(S...) =
     __Fold(uint i = 0; Acc...) if (i != S.length) {
@@ -154,6 +164,13 @@ alias NoDuplicates(S...) =
         else
             __Fold!(i + 1, Acc, S[i]);
     }[1..$];
+
+enum fqn(alias A) =
+    __Fold(string acc = A.stringof; alias S = A)
+        if (__traits(compiles(parent, S))) {
+            __Fold!(__traits(parent, S).stringof ~ '.' ~ acc,
+                __traits(parent, S));
+        }[0];
 
 template Merge(alias Less, uint half, S...)
 {
