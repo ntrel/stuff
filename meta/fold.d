@@ -125,6 +125,12 @@ alias Map(alias Tem, S...) =
         __Fold!(Acc, Tem!(S[Acc.length]));
     };
 
+// same
+alias Map(alias Tem, S...) =
+    __Fold(uint i = 0; Acc...) if (i != S.length) {
+        __Fold!(Acc, Tem!(S[i]));
+    }[1..$];
+
 alias Filter(alias pred, S...) =
     __Fold(uint i = 0; Acc...) if (i != S.length) {
         static if (pred!(S[i]))
