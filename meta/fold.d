@@ -128,7 +128,7 @@ alias Map(alias Tem, S...) =
 // same
 alias Map(alias Tem, S...) =
     __Fold(uint i = 0; Acc...) if (i != S.length) {
-        __Fold!(Acc, Tem!(S[i]));
+        __Fold!(i + 1, Acc, Tem!(S[i]));
     }[1..$];
 
 alias Filter(alias pred, S...) =
@@ -146,7 +146,7 @@ enum anySatisfy(alias pred, S...) =
                 __Fold!(true, i);
             else
                 __Fold!(false, i + 1);
-        }[1];
+        }[0];
 
 enum staticIndexOf(alias A, S...) =
     __Fold(bool found = false; uint i = 0)
