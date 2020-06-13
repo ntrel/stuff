@@ -1,0 +1,115 @@
+Recently 2 ideas have been proposed to reduce the need for recursive templates:
+
+* A `Seq...` expression to expand inline a named sequence, or an expression containing one or more named sequences.
+https://www.digitalmars.com/d/archives/digitalmars/D/I_dun_a_DIP_possibly_the_best_DIP_ever_337252.html#N337252
+
+This is essentially just a compiler intrinsic to perform the std.meta.Map operation, so it cannot wholly implement the other recursive templates in std.meta (though in some cases it may help).
+
+* 'Type functions' - special functions which can mutate aliases and sequences using the syntax of runtime constructs.
+https://forum.dlang.org/thread/qdirevtnhnejmrpetcpr@forum.dlang.org
+
+This is more general, but it cannot be used internally in std.meta because it is a different paradigm. AIUI, for example, instead of passing a template predicate to std.meta.Filter you would pass a type function to a type-function-based version of Filter. It would have a fairly big impact on Phobos to make wide use of it.
+
+So I've come up with something that is between the two, but hopefully is still general enough to implement a fairly wide class of recursive templates. The idea is to have an expression which recursively evaluates arguments for the next iteration, similar to std.algorithm.fold but at compile-time.
+https://dlang.org/phobos/std_algorithm_iteration.html#fold
+
+FoldExpression:
+    __Fold(AccumulatorDecls) if (Expression) {FoldStatements}
+AccumulatorDecl:
+    Identifier
+    BasicType Identifier
+    alias Identifier
+    Identifier...
+FoldStatement:
+    __Fold!(Expressions);
+    static if (Expression) FoldStatement else FoldStatement
+
+Here's how you could implement std.meta.staticMap:
+
+alias Map(alias Tem, S...) =
+    __Fold(Acc...) if (Acc.length != S.length) {
+        __Fold!(Acc, Tem!(S[Acc.length]));
+    };
+
+Initially, Acc is an empty sequence. The __Fold!() expression defines what the next iteration's parameters will be, in this case `Tem!(S[0])` if S.length > 0. The second iteration will evaluate to __Fold!(Tem!(S[0]), Tem!(S[1])) if S.length > 1. When the `if` expression is false, the FoldExpression evaluates to a sequence of its last parameter values, i.e. Acc above.
+
+If you like, you can also implement that with an index as a parameter:
+
+alias Map(alias Tem, S...) =
+    __Fold(uint i = 0; Acc...) if (i != S.length) {
+        __Fold!(i + 1, Acc, Tem!(S[i]));
+    }[1..$];
+
+The result of the __Fold expression is a sequence (i, Acc), so we slice just the Acc part to remove the final index element and obtain just the mapped items.
+
+Within the FoldStatements, we can use `static if`, so we can easily implement Filter:
+
+alias Filter(alias pred, S...) =
+    __Fold(uint i = 0; Acc...) if (i != S.length) {
+        static if (pred!(S[i]))
+            __Fold!(i + 1, Acc, S[i]);
+        else
+            __Fold!(i + 1, Acc);
+    }[1..$];
+
+We can also implement std.meta templates that don't create a sequence:
+
+enum anySatisfy(alias pred, S...) =
+    __Fold(bool found = false; uint i = 0)
+        if (!found && i != S.length) {
+            static if (pred!(S[i]))
+                __Fold!(true, i);
+            else
+                __Fold!(false, i + 1);
+        }[0];
+
+Note: core.internal.traits actually implements anySatisfy with `static foreach` rather than template recursion, but I'm hoping the above can be competitive with that. The same is true for std.meta.staticIndexOf:
+
+enum staticIndexOf(alias A, S...) =
+    __Fold(bool found = false; uint i = 0)
+        if (!found && i != S.length) {
+            static if (isSame!(A, S[i]))
+                __Fold!(true, i));
+            else
+                __Fold!(false, i + 1);
+        }[1];
+
+Note: isSame is a private template of std.meta.
+
+How about templates that can't be implemented with `static foreach`?
+
+// similar to std.traits.fullyQualifiedName (the real version would
+// instantiate a formatting template instead of using stringof).
+enum fqn(alias A) =
+    __Fold(string acc = A.stringof; alias S = A)
+        if (__traits(compiles(parent, S))) {
+            __Fold!(__traits(parent, S).stringof ~ '.' ~ acc,
+                __traits(parent, S));
+        }[0];
+
+FoldExpression can't replace divide and conquer recursion, but for std.meta.staticSort it can replace the private template staticMerge:
+
+template Merge(alias Less, uint half, S...)
+{
+    alias Result = __Fold(uint i = 0; uint j = half; Acc...)
+        if (i != half && j != S.length) {
+            static if (Less!(S[i], S[j]))
+                __Fold!(i + 1, j, Acc, S[i]);
+            else
+                __Fold!(i, j + 1, Acc, S[j]);
+        };
+    // fold handles min(half, S.length - half) elements of S
+    // then append any remaining elements
+    alias Merge = AliasSeq!(Result[2..$],
+        S[Result[0]..half], S[Result[1]..$]);
+}
+
+But is a FoldExpression really more efficient than a recursive template? Yes:
+
+* It doesn't insert templateName!args strings into a symbol table
+* It doesn't permanently cache the result of each iteration
+* It doesn't declare any symbol, so it doesn't need its own scope
+* For __Fold(T[] acc), a __Fold!(acc ~ element) expression could reuse any spare capacity in the array to append element.
+* For __Fold(Acc...), a __Fold!(Acc, Element) expression could reuse any spare capacity in the memory allocated for Acc to append Element.
+
+What do you think?
