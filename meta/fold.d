@@ -149,13 +149,38 @@ enum anySatisfy(alias pred, S...) =
         }[0];
 
 enum staticIndexOf(alias A, S...) =
-    __Fold(bool found = false; uint i = 0)
-        if (!found && i != S.length) {
+    __Fold(bool found = false, uint i = 0)
+        while (!found && i != S.length)
+        {
             static if (isSame!(A, S[i]))
                 __Fold!(true, i));
             else
                 __Fold!(false, i + 1);
         }[1];
+
+// AssignExpression style (harder for compiler, order of eval issues)
+enum staticIndexOf(alias A, S...) =
+    __Fold(bool found = false, uint i = 0)
+        while(!found && i != S.length) {
+            static if (isSame!(A, S[i]))
+                found = true;
+            else
+                i++;
+        }.i;
+
+// closer to nested template - see foldtpl.d
+enum staticIndexOf(alias A, S...) =
+    __Fold(uint i = 0)
+    {
+        static if (i != S.length)
+        {
+            static if (isSame!(A, S[i]))
+                i;
+            else
+                __Fold!(i + 1);
+        }
+        else -1;
+    };
 
 alias NoDuplicates(S...) =
     __Fold(uint i = 0; Acc...) if (i != S.length) {
@@ -183,7 +208,7 @@ template Merge(alias Less, uint half, S...)
         };
     // fold handles min(half, S.length - half) elements of S
     // then append any remaining elements
-    alias Merge = AliasSeq!(Result[2..$],
-        S[Result[0]..half], S[Result[1]..$]);
+    alias Merge = AliasSeq!(Result.Acc,
+        S[Result.i .. half], S[Result.j .. $]);
 }
 
