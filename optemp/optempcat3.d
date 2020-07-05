@@ -34,5 +34,3 @@ void main()
     //s1 ~ s2 ~ s3
     s1.opBinaryTemp!"~"(s2).opBinary!"~"(s3).data.writeln;
 }
-//~ `s1 * (s2 + s3)` lowers to:
-//~ s1.opBinary!"*"(s2.opBinaryTemp!"+"(s3))

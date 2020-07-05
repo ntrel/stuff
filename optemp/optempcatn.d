@@ -8,7 +8,7 @@ struct S {
         static foreach (E; T)
             static assert(is(E == S));
 
-        // concat(items) ~ rhs
+        // optimized concat(items) ~ rhs
         S opBinary(string op : "~")(S rhs) {
             auto len = rhs.data.length;
             foreach (s; items)
@@ -16,8 +16,7 @@ struct S {
             auto r = new int[len];
             
             size_t i;
-            foreach (s; items)
-            {
+            foreach (s; items) {
                 r[i..$][0..s.data.length] = s.data;
                 i += s.data.length;
             }
@@ -28,16 +27,14 @@ struct S {
             return expr(items, rhs);
         }
     }
-    private static expr(T...)(T args)
-    {
+    private static expr(T...)(T args) {
         return Expr!T(args);
     }
     auto opBinaryTemp(string op : "~")(S rhs) {
         return expr(this, rhs);
     }
-    // this ~ rhs
     S opBinary(string op : "~")(S rhs) {
-        return S(data ~ rhs.data);
+        return expr(this) ~ rhs;
     }
 }
 
