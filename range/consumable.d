@@ -1,7 +1,10 @@
+module consumable;
+
 import std.range;
 import std.traits;
 
-enum isConsumable(T) = is(typeof(lvalueOf!T.next()).isInstanceOf!Optional);
+enum isConsumable(T) = __traits(compiles,
+	{static assert(typeof(lvalueOf!T.next()).isInstanceOf!Optional);});
 
 template ElementType(C)
 if (isConsumable!C)
