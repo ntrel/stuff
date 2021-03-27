@@ -1,37 +1,16 @@
 import std.range;
+import std.traits;
 
-private struct FilterResult(alias pred, Consumable)
+enum isConsumable(T) = is(typeof(lvalueOf!T.next()).isInstanceOf!Optional);
+
+template ElementType(C)
+if (isConsumable!C)
 {
-	Consumable c;
-
-	Optional!E next() {
-		auto opt = c.next;
-		if (!opt.isEmpty)
-		{
-			auto e = opt.unwrap;
-			if (pred(e))
-				return opt;
-		}
-		return Optional!E();
-	}
-}
-private struct FilterResult(alias pred, Range)
-{
-	Range r;
-
-	Optional!E next() {
-		if (!r.empty)
-		{
-			auto e = r.front;
-			r.popFront;
-			if (pred(e))
-				return optional(e);
-		}
-		return Optional!E();
-	}
+	alias ElementType = typeof(lvalueOf!C.next.unwrap());
 }
 
 auto consumable(R)(R r)
+if (!isConsumable!C)
 {
 	static struct Consumable
 	{
@@ -48,16 +27,8 @@ auto consumable(R)(R r)
 	return Consumable(r);
 }
 
-import std.traits;
-enum isConsumable(T) = is(typeof(lvalueOf!T.next()).isInstanceOf!Optional);
-
-template ElementType(C)
-if (isConsumable!C)
-{
-	alias ElementType = typeof(lvalueOf!C.next.unwrap());
-}
-
 auto cache(C)(C consumable)
+if (isConsumable!C)
 {
 	static struct Cache
 	{
