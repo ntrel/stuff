@@ -1,10 +1,11 @@
 module consumable;
 
+public import optional;
 import std.range;
-import std.traits;
+import std.traits : isInstanceOf, lvalueOf;
 
 enum isConsumable(T) = __traits(compiles,
-	{static assert(typeof(lvalueOf!T.next()).isInstanceOf!Optional);});
+	{static assert(isInstanceOf!(Optional, typeof(lvalueOf!T.next())));});
 
 template ElementType(C)
 if (isConsumable!C)
@@ -24,7 +25,7 @@ if (!isConsumable!C)
 				return Optional!E();
 			auto e = r.front;
 			r.popFront;
-			return optional(e);
+			return just(e);
 		}
 	}
 	return Consumable(r);
@@ -52,7 +53,7 @@ if (isConsumable!C)
 		void popFront()
 		{
 			auto opt = c.next();
-			empty = opt.isEmpty;
+			empty = opt.empty;
 			if (!empty)
 				e = opt.unwrap();
 		}
