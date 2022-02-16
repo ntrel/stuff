@@ -42,12 +42,7 @@ function agreeClick() {
     btn.disabled = !cb.checked;
 }
 function nextClick() {
-    const sd = document.getElementById("shopDiv");
-    const frame = '<iframe src="order.html" width="100%" height="100%"></iframe>';
-    sd.innerHTML = frame;
-    sd.width = '100%';
-    sd.height = '100%';
-    window.scrollTo(0,0);
+    window.location.href = 'order.html';
 }
 /*]]>*/
 </script>
