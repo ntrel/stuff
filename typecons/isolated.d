@@ -1,5 +1,6 @@
 @safe:
 
+///
 @system assumeIsolated(T)(auto ref T v)
 {
     auto r = Isolated!T(v);
@@ -8,7 +9,9 @@
     return r;
 }
 
+///
 struct Isolated(T)
+if (__traits(compiles, (T v) { v = null; }))
 {
     private T data;
 
@@ -16,6 +19,15 @@ struct Isolated(T)
 
     @disable this(this);
 
+    ///
+    auto move()
+    {
+        auto r = Isolated(data);
+        data = null;
+        return r;
+    }
+
+    ///
     T unwrap()
     {
         auto d = data;
@@ -27,7 +39,7 @@ struct Isolated(T)
 interface IAllocator
 {
     void* allocate(size_t n);
-    void safeDeallocate(ref Isolated!(void*) ip);
+    void safeDeallocate(Isolated!(void*) ip);
 }
 
 class Mallocator : IAllocator
@@ -39,7 +51,7 @@ class Mallocator : IAllocator
         return malloc(n);
     }
 
-    void safeDeallocate(ref Isolated!(void*) ip) @trusted
+    void safeDeallocate(Isolated!(void*) ip) @trusted
     {
         ip.unwrap.free;
     }
@@ -50,6 +62,6 @@ void main()
     IAllocator a = new Mallocator;
     scope m = a.allocate(4);
     auto ip = (() @trusted => assumeIsolated(m))();
-    a.safeDeallocate(ip);
+    a.safeDeallocate(ip.move);
     assert(ip.unwrap == null);
 }
