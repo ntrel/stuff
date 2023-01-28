@@ -60,8 +60,7 @@ class Mallocator : IAllocator
 void main()
 {
     IAllocator a = new Mallocator;
-    scope m = a.safeAllocate(4);
-    auto ip = (() @trusted => assumeIsolated(m))();
+    auto ip = (() @trusted => assumeIsolated(a.safeAllocate(4)))();
     a.safeDeallocate(ip.move);
     assert(ip.unwrap == null);
 }
