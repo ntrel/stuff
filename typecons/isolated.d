@@ -38,7 +38,7 @@ if (__traits(compiles, (T v) { v = null; }))
 
 interface IAllocator
 {
-    void* allocate(size_t n);
+    void* safeAllocate(size_t n);
     void safeDeallocate(Isolated!(void*) ip);
 }
 
@@ -46,7 +46,7 @@ class Mallocator : IAllocator
 {
     import core.stdc.stdlib : free, malloc;
 
-    void* allocate(size_t n) @trusted
+    void* safeAllocate(size_t n) @trusted
     {
         return malloc(n);
     }
@@ -60,7 +60,7 @@ class Mallocator : IAllocator
 void main()
 {
     IAllocator a = new Mallocator;
-    scope m = a.allocate(4);
+    scope m = a.safeAllocate(4);
     auto ip = (() @trusted => assumeIsolated(m))();
     a.safeDeallocate(ip.move);
     assert(ip.unwrap == null);
