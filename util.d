@@ -29,7 +29,7 @@ module util;
 
 @safe:
 
-/// See_Also: std.exception.assumeUnique.
+/// See_Also: std.exception.assumeUnique for array version.
 immutable(T)* assumeUnique(T)(T* ptr) @system
 {
     return cast(typeof(return))ptr;
@@ -192,4 +192,23 @@ alias staticEx(string msg, string file = __FILE__, size_t line = __LINE__) =
 }
 
 
-// TODO: frameArray, Set
+/// Enforce a dynamic cast, disallowing const cast removal
+D derived(D, B : Object)(B base)
+if (is(D : B) && !__traits(compiles, base.opCast!D))
+{
+    // TODO disallow extern(C++) class
+    return cast(D)base;
+}
+
+static assert(!__traits(compiles, derived!Exception(new const Object)));
+
+///
+unittest
+{
+    alias E = Exception;
+    Object o = new E("hi");
+    E e = o.derived!E;
+    assert(e.msg == "hi");
+}
+
+// TODO: Set
