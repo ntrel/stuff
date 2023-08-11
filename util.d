@@ -111,80 +111,6 @@ unittest
 }
 
 
-/** Runs destructor and frees memory.
- * Sets argument to null for safety.
- */
-auto delete_(C:Object)(ref C obj) @system
-{
-    destroy(obj);
-    import core.memory;
-    GC.free(cast(void*)obj);
-    obj = null;
-}
-
-/// ditto
-auto delete_(T)(ref T* ptr) @system
-{
-    import std.traits;
-    static if (hasElaborateDestructor!T)
-        destroy(*ptr);
-    import core.memory;
-    GC.free(ptr);
-    ptr = null;
-}
-
-///
-unittest
-{
-    int j;
-    class C
-    {
-        ~this(){j = 3;}
-    }
-    auto c = new C;
-    ()@trusted {delete_(c);}();
-    assert(j == 3);
-    assert(c is null);
-
-    struct S
-    {
-        ~this(){j++;}
-    }
-    auto s = new S;
-    ()@trusted {delete_(s);}();
-    assert(j == 4);
-    assert(s is null);
-
-    auto sa = new StaticArray!(S, 3);
-    ()@trusted {delete_(sa);}();
-    assert(sa is null);
-    assert(j == 7);
-}
-
-
-/// Dereferences ptr. Helps to avoid bracket nesting.
-ref deref(T)(T* ptr){
-    return *ptr;
-}
-
-///
-@system unittest
-{
-    int i;
-    auto p = &i;
-    ++*p;
-    assert(i == 1);
-    p.deref *= 2;   // post op without brackets
-    assert(i == 2);
-
-    import std.stdio;
-    p.deref.writeln;    // use in UFCS chains
-
-    i = deref([0, 3].ptr + 1);  // less syntax noise for more complicated expressions
-    assert(i == 3);
-}
-
-
 import core.stdc.stdlib : alloca;
 
 /** Dynamically allocates array memory on the caller's stack frame.
@@ -203,51 +129,6 @@ T[] frameArray(T, alias size)(void* ptr = alloca(T.sizeof * size)) @system
     auto s = frameArray!(int, size);
     s[] = [3, 4];
     assert(s == [3, 4]);
-}
-
-
-/**
- * Interprets an array literal as a static array.
- *
- * Params:
- *      arr = Array literal.
- *
- * Returns: A static array of size `arr.length`.
- *
- * Warning:
- * Do not initialize a dynamic array with a static array literal.
- * The dynamic array slice would point to stack memory no longer in use.
- * Instead define the static array first using type inference (or `int[4]`).
- * ---
- * int[] invalid = [1,2,3,4].staticArray; // Wrong
- * ---
- * The compiler $(I should) prevent this in `@safe` code once
- * $(LINK2 http://issues.dlang.org/show_bug.cgi?id=12625, Issue 12625)
- * is implemented.
- * Author: Ryan Roden-Corrent (rcorre)
- */
-pragma(inline, true)
-@nogc T[n] staticArray(T, size_t n)(T[n] arr)
-{
-    return arr;
-}
-
-/// Array size and type can be inferred:
-@safe @nogc pure nothrow unittest
-{
-    auto arr = [1,2,3,4].staticArray;
-    static assert(is(typeof(arr) == int[4])); // arr is a static array
-    assert(arr == [1,2,3,4]);
-}
-
-// dmd doesn't support inference of n, but not T for staticArray!immutable
-// http://issues.dlang.org/show_bug.cgi?id=15890
-/// The element type can also be supplied:
-@safe @nogc pure nothrow unittest
-{
-    auto arr = [1,2].staticArray!(immutable int, 2);
-    static assert(is(typeof(arr) == immutable(int)[2]));
-    assert(arr == [1,2].staticArray);
 }
 
 
