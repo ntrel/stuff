@@ -9,7 +9,6 @@
  * Functions:
  * $(LREF apply)
  * $(LREF assumeUnique)
- * $(LREF delete_)
  * $(LREF deref)
  * $(LREF frameArray)
  * $(LREF staticArray)
@@ -151,7 +150,8 @@ unittest
     sa[1] = 6;
     sa[0] = sa[1];
     assert(sa[0] == 6);
-    ()@trusted {delete_(p);}();
+    import core.memory;
+    ()@trusted {__delete(p);}();
 }
 
 
