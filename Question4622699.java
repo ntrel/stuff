@@ -134,14 +134,14 @@ public class Question4622699 {
         }
         System.out.println();
         for (int p = 0;p < npeople;p++) {
-            System.out.format("%2d: ", p + 1);
+            System.out.format("%2d:", p + 1);
             for (int i = 0;i < nrounds;i++) {
                 for (int j = 0;j < ntables;j++) {
                     for (int k = 0;k < nchairs;k++) {
                         if (groups [i] [j] [k] == p)
                         {
-                            System.out.format("%2c", 'A' + (char) j);
                             System.out.print(" ");
+                            System.out.format("%c", 'A' + j);
                             break;
                         }
                     }
