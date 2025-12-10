@@ -16,6 +16,7 @@ struct Final(T)
     
     bool opEquals(T v) => this.v == v;
 
+    /// no assignment
     @disable void opAssign(U)(U u);
 
     // We can define mutable ref access only when result is not part of T's storage
@@ -25,7 +26,7 @@ struct Final(T)
 
     ref opIndex()(size_t i) if (is(T == U[], U)) => v[i];
 
-    /// Returns: rvalue
+    /// Returns: A field of T by rvalue
     // Return Final ref?
     auto opDispatch(string f)()
     if (__traits(compiles, __traits(getMember, v, f))) => mixin("v." ~ f);
@@ -41,6 +42,8 @@ unittest
     assert(f == 1);
     int i = f;
     assert(i == 1);
+    static assert(!__traits(compiles, f = 2));
+    static assert(!__traits(compiles, f += 1));
     static assert(!__traits(compiles, f++));
     static assert(!__traits(compiles, f.getRef++));
 }
