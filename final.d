@@ -20,10 +20,12 @@ struct Final(T)
     @disable void opAssign(U)(U u);
 
     // We can define mutable ref access only when result is not part of T's storage
-    ref opUnary(string op : "*")() if (is(T == U*, U)) => *v;
+    ref opUnary(string op : "*")()
+    if (is(T == U*, U)) => *v;
     // Note: A struct could define an op to refer to part of itself
     // Note: A struct could convert to pointer/slice but still overload the op
-    auto opUnary(string op : "*")() if (is(T == struct)) => *v;
+    auto opUnary(string op : "*")()
+    if (is(T == struct)) => *v;
 
     /// Returns: ref element
     ref opIndex()(size_t i)
@@ -115,7 +117,7 @@ unittest
     static assert(!__traits(compiles, f.p++));
     (*f.p)++;
     assert(i == 1);
-    static assert(__traits(compiles, &*s)); // ref
-    static assert(!__traits(compiles, &*f)); // rvalue
+    static assert(__traits(compiles, *s = 2)); // ref
+    static assert(!__traits(compiles, *f = 2)); // rvalue
     assert(*f == 1);
 }
