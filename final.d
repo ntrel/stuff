@@ -16,15 +16,19 @@ struct Final(T)
 
     @disable void opAssign(U)(U u);
 
-    // TODO other ops, constraints
-    ref opUnary(string op : "*")() => *v;
-    @disable void opUnary(string op)();
+    // We can define mutable ref access only when result is not part of T's storage
+    // Note: A struct could define an op to refer to part of itself
+    // Note: A struct could convert to pointer/slice but still overload the op
+    ref opUnary(string op : "*")() if (is(T == U*, U)) => *v;
 
-    ref opIndex()(size_t i) if (__traits(compiles, v[i])) => v[i];
+    ref opIndex()(size_t i) if (is(T == U[], U)) => v[i];
 
     /// Returns: rvalue
     // Return Final ref?
-    auto opDispatch(string f)() => mixin("v." ~ f);
+    auto opDispatch(string f)()
+    if (__traits(compiles, __traits(getMember, v, f))) => mixin("v." ~ f);
+
+    // TODO other ops?
 }
 auto final_(T)(T v) => Final!T(v);
 
@@ -48,6 +52,7 @@ unittest
     static assert(!__traits(compiles, f++));
 
     (*f)++;
+    assert(*f == 1);
     assert(i == 1);
 }
 
