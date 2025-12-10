@@ -7,10 +7,12 @@ struct Final(T)
     
     alias this = get;
     /// convert to rvalue
+    // Bug: doesn't prevent assigning to a struct result which has opAssign defined
+    // https://github.com/dlang/dmd/issues/21507
     T get() => v;
     
     /// avoid copying a value type
-    const ref getRef() => v;
+    ref const(T) getRef() => v;
     
     bool opEquals(T v) => this.v == v;
 
@@ -39,6 +41,8 @@ unittest
     assert(f == 1);
     int i = f;
     assert(i == 1);
+    static assert(!__traits(compiles, f++));
+    static assert(!__traits(compiles, f.getRef++));
 }
 
 /// pointer
