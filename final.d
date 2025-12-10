@@ -24,7 +24,10 @@ struct Final(T)
     // Note: A struct could convert to pointer/slice but still overload the op
     ref opUnary(string op : "*")() if (is(T == U*, U)) => *v;
 
+    /// Returns: ref element
     ref opIndex()(size_t i) if (is(T == U[], U)) => v[i];
+    /// Returns: rvalue element
+    auto opIndex()(size_t i) if (is(T == U[n], U, size_t n)) => v[i];
 
     /// Returns: A field of T by rvalue
     // Return Final ref?
@@ -81,4 +84,30 @@ unittest
     assert(a !is f.get);
     a = f;
     assert(a is f.get);
+}
+
+/// static array
+unittest
+{
+    int i;
+    int*[1] sa = [&i];
+    auto f = final_(sa);
+    assert(f.length == 1); // not compile-time property
+    static assert(!__traits(compiles, f[0]++));
+    (*f[0])++;
+    assert(i == 1);
+}
+
+/// struct
+unittest
+{
+    static struct S
+    {
+        int* p;
+    }
+    int i;
+    auto f = final_(S(&i));
+    static assert(!__traits(compiles, f.p++));
+    (*f.p)++;
+    assert(i == 1);
 }
