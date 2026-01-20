@@ -17,6 +17,10 @@ public class Question4622699 {
     static int count;
 
     public static void main(String [] args) {
+        var minRounds = (float)(npeople - 1) / (nchairs - 1);
+        // round up to nearest int
+        System.out.format("Ideally %d rounds\n\n", Math.round(minRounds + .5));
+
         for (int i = 0;i < nrounds;i++) {
             int [] left = new int [npeople];
             for (int j = 0;j < npeople;j++)
