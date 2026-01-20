@@ -3,9 +3,9 @@
 import java.util.Random;
 
 public class Question4622699 {
-    final static int nrounds = 5;
-    final static int ntables = 4;
-    final static int nchairs = 4;
+    final static int nrounds = 5; // set to lowest number that finishes
+    final static int ntables = 3;
+    final static int nchairs = 4; // per table
     final static int npeople = ntables * nchairs;
 
     final static Random random = new Random();
@@ -120,9 +120,14 @@ public class Question4622699 {
             count--;
     }
 
+    // print person numbers so they can be easily regex replaced with initials
+    // group is alphabetic
+    // person is numeric
     static void print () {
+        // print each round's groups
         // 1-based
         for (int i = 0;i < nrounds;i++) {
+            System.out.format("R%d: ", i + 1);
             for (int j = 0;j < ntables;j++) {
                 for (int k = 0;k < nchairs;k++) {
                     System.out.format("%2d",groups [i] [j] [k] + 1);
@@ -133,6 +138,7 @@ public class Question4622699 {
             System.out.println();
         }
         System.out.println();
+        // print each person's groups
         for (int p = 0;p < npeople;p++) {
             System.out.format("%2d:", p + 1);
             for (int i = 0;i < nrounds;i++) {
@@ -150,15 +156,16 @@ public class Question4622699 {
             System.out.println();
         }
         System.out.println();
+        // print each person's groups, line by line
         for (int p = 0;p < npeople;p++) {
-            System.out.format("P%d", p + 1);
+            System.out.format("%2d:", p + 1);
             System.out.println();
             for (int i = 0;i < nrounds;i++) {
                 for (int j = 0;j < ntables;j++) {
                     for (int k = 0;k < nchairs;k++) {
                         if (groups [i] [j] [k] == p)
                         {
-                            System.out.format("Round %c: Group ", i + '1');
+                            System.out.format("Round_%d: Group ", i + 1);
                             System.out.format("%c", 'A' + j);
                             System.out.println();
                             break;
